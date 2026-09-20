@@ -27,12 +27,18 @@ typedef union {
 typedef struct {
  zp_vec2  _r1;
  zp_vec2  _r2;
+ 
+ zp_vec2  _updated_r1;
+ zp_vec2  _updated_r2;
+
  zp_vec2  _normal;
  float    _depth;
- /* persistent data across frames */
+ float    _updated_depth;
+ 
  float    _mass_normal;
  float    _mass_tangent;
  float    _bias;
+  
  float    _accumulated_normal;
  float    _accumulated_tangent;
  zp_contact2d_id _id;
@@ -42,8 +48,8 @@ typedef struct {
  zp_contact2d    _contacts[2];
  zp_container_id _body_a;
  zp_container_id _body_b;
+ 
  uint8_t         _contact_count;
- uint8_t         _manifold;
 } zp_manifold2d;
 
 

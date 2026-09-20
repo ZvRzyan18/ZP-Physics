@@ -45,11 +45,12 @@ zp_hot zp_inline void update_aabb(zp_body2d *const zp_restrict body) {
 }
 
 
-
+extern void sincosf(float x, float *s, float *c);
 
 
 
 void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt) {
+
  const zp_world2d *const ctx = (zp_world2d*)world;
  const zp_vec2 dt_vec = zp_stv2(dt);
  const zp_vec2 inv_mass = zp_stv2(body->_head._inv_mass);
@@ -77,9 +78,14 @@ void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_r
    
  body->_head._omega *= zp_exp2(dt * body->_head._angular_damping);
 
- const float o_epsilon = 0.01f;
-   
- if(zp_abs(body->_head._omega) > o_epsilon) {
+ const float o_epsilon = 0.001f;
+ const float v_epsilon = 0.1f;
+ 
+ float dt_a = zp_dot2(body->_head._velocity, body->_head._velocity);
+ 
+ uint8_t update_rotation = zp_abs(body->_head._omega) > o_epsilon;
+ uint8_t update_position = dt_a > v_epsilon;
+ if(update_rotation) {
   float omega = body->_head._omega * dt;
   zp_complex omega_complex;
   omega_complex.x = 1.0f - 0.5f * omega * omega;
@@ -88,11 +94,12 @@ void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_r
   body->_head._rotation = zp_unit2(body->_head._rotation);
  }
   
- float dt_a = zp_dot2(body->_head._velocity, body->_head._velocity);
- const float v_epsilon = 0.1f;
- if(dt_a > v_epsilon) 
+
+ if(update_position) {
   body->_head._position = zp_fma2(body->_head._velocity, dt_vec, body->_head._position);   
- update_aabb(body);
+ }
+ if(update_rotation || update_position)
+  update_aabb(body);
 }
 
 
