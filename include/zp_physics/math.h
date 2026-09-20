@@ -53,7 +53,7 @@ zp_const zp_inline float zp_fma(const float a, const float b, const float c) {
  return result;
 #else
 */
- return a * b + c;
+ return fmaf(a, b, c);
 }
 
 /*

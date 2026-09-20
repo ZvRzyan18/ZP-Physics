@@ -15,6 +15,7 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
 
  zp_compiler_memory_barrier();
 
+ zp_vec2 a_pos = body_a->_head._position;
  zp_complex a_rot = body_a->_head._rotation;
  zp_vec2 a_velocity = body_a->_head._velocity;
  float a_inv_mass = body_a->_head._inv_mass;
@@ -23,6 +24,7 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
 
  zp_compiler_memory_barrier();
 
+ zp_vec2 b_pos = body_b->_head._position;
  zp_complex b_rot = body_b->_head._rotation;
  zp_vec2 b_velocity = body_b->_head._velocity;
  float b_inv_mass = body_b->_head._inv_mass;
@@ -38,8 +40,17 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
  for(uint8_t i = 0; i < m->_contact_count; i++) {
  	zp_contact2d *const contact = m->_contacts + i;
 
-  zp_vec2 r1 = zp_cmul(a_rot, contact->_r1);
-  zp_vec2 r2 = zp_cmul(b_rot, contact->_r2);
+  contact->_updated_r1 = zp_cmul(a_rot, contact->_r1);
+  contact->_updated_r2 = zp_cmul(b_rot, contact->_r2);
+
+  float adjusted_depth = contact->_depth + zp_dot2(zp_sub2(contact->_updated_r2, contact->_updated_r1), contact->_normal);
+  zp_vec2 p1 = zp_add2(a_pos, contact->_updated_r1);
+  zp_vec2 p2 = zp_add2(b_pos, contact->_updated_r2);
+
+  contact->_updated_depth = -(zp_dot2(zp_sub2(p2, p1), contact->_normal) - adjusted_depth);
+
+  zp_vec2 r1 = contact->_updated_r1;
+  zp_vec2 r2 = contact->_updated_r2;
 
 	 float rn1 = zp_dot2(r1, contact->_normal);
 	 float rn2 = zp_dot2(r2, contact->_normal);
@@ -90,8 +101,11 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
   -------------------------------------
   
   */
+  
   float x = impact_speed * bounciness_response_factor;
   contact->_bias = (impact_speed * e) * zp_tanh(zp_min(x, 0.0f));
+
+
  }
 }
 
@@ -107,7 +121,6 @@ void zp_manifold2d_soft_presolve_contact(zp_manifold2d *const zp_restrict m, voi
 
  zp_compiler_memory_barrier();
 
- zp_complex a_rot = body_a->_head._rotation;
  zp_vec2 a_velocity = body_a->_head._velocity;
  float a_omega = body_a->_head._omega;
  float a_inv_mass = body_a->_head._inv_mass;
@@ -115,7 +128,6 @@ void zp_manifold2d_soft_presolve_contact(zp_manifold2d *const zp_restrict m, voi
 
  zp_compiler_memory_barrier();
 
- zp_complex b_rot = body_b->_head._rotation;
  zp_vec2 b_velocity = body_b->_head._velocity;
  float b_omega = body_b->_head._omega;
  float b_inv_mass = body_b->_head._inv_mass;
@@ -124,8 +136,8 @@ void zp_manifold2d_soft_presolve_contact(zp_manifold2d *const zp_restrict m, voi
  for(uint8_t i = 0; i < m->_contact_count; i++) {
  	zp_contact2d *const contact = m->_contacts + i;
 
-  zp_vec2 r1 = zp_cmul(a_rot, contact->_r1);
-  zp_vec2 r2 = zp_cmul(b_rot, contact->_r2);
+  zp_vec2 r1 = contact->_updated_r1;
+  zp_vec2 r2 = contact->_updated_r2;
   
   float j = contact->_accumulated_normal;
 	 zp_vec2 tangent = zp_perp2(contact->_normal);
@@ -139,7 +151,7 @@ void zp_manifold2d_soft_presolve_contact(zp_manifold2d *const zp_restrict m, voi
  } 
  body_a->_head._velocity = a_velocity;
  body_a->_head._omega = a_omega;
- 
+
  zp_compiler_memory_barrier();
 
  body_b->_head._velocity = b_velocity;
@@ -155,8 +167,6 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
 
  zp_compiler_memory_barrier();
 
- zp_vec2 a_pos = body_a->_head._position;
- zp_complex a_rot = body_a->_head._rotation;
  zp_vec2 a_velocity = body_a->_head._velocity;
  float a_omega = body_a->_head._omega;
  float a_inv_mass = body_a->_head._inv_mass;
@@ -165,8 +175,6 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
 
  zp_compiler_memory_barrier();
 
- zp_vec2 b_pos = body_b->_head._position;
- zp_complex b_rot = body_b->_head._rotation;
  zp_vec2 b_velocity = body_b->_head._velocity;
  float b_omega = body_b->_head._omega;
  float b_inv_mass = body_b->_head._inv_mass;
@@ -186,19 +194,9 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
  for(uint8_t i = 0; i < m->_contact_count; i++) {
  	zp_contact2d *const contact = m->_contacts + i;
 
-  r1 = contact->_r1;
-  r2 = contact->_r2;
-
-
-  r1 = zp_cmul(a_rot, r1);
-  r2 = zp_cmul(b_rot, r2);
-
-  float adjusted_depth = contact->_depth + zp_dot2(zp_sub2(r2, r1), contact->_normal);
-
-  zp_vec2 p1 = zp_add2(a_pos, contact->_r1);
-  zp_vec2 p2 = zp_add2(b_pos, contact->_r2);
-  depth = -(zp_dot2(zp_sub2(p2, p1), contact->_normal) - adjusted_depth);
-  
+  r1 = contact->_updated_r1;
+  r2 = contact->_updated_r2;
+  depth = contact->_updated_depth;
 
 	 va = zp_add2(a_velocity, zp_cross_sv2(a_omega, r1));
   vb = zp_add2(b_velocity, zp_cross_sv2(b_omega, r2));
@@ -219,13 +217,12 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
 
   /* logarithmic with damping-like behaviour */
   penetration_error = zp_log2(penetration_error + 1.0f) * 0.69314718f;
-	 penetration_error = -(vn - contact->_bias) + penetration_error;
+  penetration_error = -(vn - contact->_bias) + penetration_error;
 
   float mass = contact->_mass_normal * input->_mass_coeff;
 	 j = mass * penetration_error;
   j -= input->_impulse_coeff * contact->_accumulated_normal;
-
-  
+    
 		float accumulated_normal = contact->_accumulated_normal;
 		contact->_accumulated_normal = zp_max(accumulated_normal + j, 0.0f);
 		j = contact->_accumulated_normal - accumulated_normal;
@@ -278,10 +275,9 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
 	 b_velocity = zp_add2(b_velocity, zp_mul2(zp_stv2(b_inv_mass), impulse));
 	 b_omega += b_inv_inertia * zp_cross2(r2, impulse);
  }
-
  body_a->_head._velocity = a_velocity;
  body_a->_head._omega = a_omega;
- 
+
  zp_compiler_memory_barrier();
 
  body_b->_head._velocity = b_velocity;
@@ -300,8 +296,6 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
 
  zp_compiler_memory_barrier();
 
- zp_vec2 a_pos = body_a->_head._position;
- zp_complex a_rot = body_a->_head._rotation;
  zp_vec2 a_velocity = body_a->_head._velocity;
  float a_omega = body_a->_head._omega;
  float a_inv_mass = body_a->_head._inv_mass;
@@ -310,8 +304,6 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
 
  zp_compiler_memory_barrier();
 
- zp_vec2 b_pos = body_b->_head._position;
- zp_complex b_rot = body_b->_head._rotation;
  zp_vec2 b_velocity = body_b->_head._velocity;
  float b_omega = body_b->_head._omega;
  float b_inv_mass = body_b->_head._inv_mass;
@@ -331,19 +323,9 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
  for(uint8_t i = 0; i < m->_contact_count; i++) {
  	zp_contact2d *const contact = m->_contacts + i;
 
-  r1 = contact->_r1;
-  r2 = contact->_r2;
-
-
-  r1 = zp_cmul(a_rot, r1);
-  r2 = zp_cmul(b_rot, r2);
-
-  float adjusted_depth = contact->_depth + zp_dot2(zp_sub2(r2, r1), contact->_normal);
-
-  zp_vec2 p1 = zp_add2(a_pos, contact->_r1);
-  zp_vec2 p2 = zp_add2(b_pos, contact->_r2);
-  depth = -(zp_dot2(zp_sub2(p2, p1), contact->_normal) - adjusted_depth);
-  
+  r1 = contact->_updated_r1;
+  r2 = contact->_updated_r2;
+  depth = contact->_updated_depth;
 
 	 va = zp_add2(a_velocity, zp_cross_sv2(a_omega, r1));
   vb = zp_add2(b_velocity, zp_cross_sv2(b_omega, r2));
@@ -354,7 +336,7 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
 
 
 
-  float slop = 0.004f;
+  float slop = 0.04f;
   float penetration_error = 0.0f;
 
   if(depth < 0.0f) {
@@ -369,10 +351,8 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
   penetration_error = zp_log2(penetration_error + 1.0f) * 0.69314718f;
   penetration_error = -(vn - contact->_bias) + penetration_error;
 
-  
 	 j = contact->_mass_normal * penetration_error;
-
-  
+    
 		float accumulated_normal = contact->_accumulated_normal;
 		contact->_accumulated_normal = zp_max(accumulated_normal + j, 0.0f);
 		j = contact->_accumulated_normal - accumulated_normal;
@@ -416,6 +396,3 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
  body_b->_head._velocity = b_velocity;
  body_b->_head._omega = b_omega;
 }
-
-
-

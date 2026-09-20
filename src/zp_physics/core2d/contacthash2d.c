@@ -2,6 +2,7 @@
 #include "zp_physics/math.h"
 #include <stdlib.h>
 #include <string.h>
+
 /*
 Robert Jenkins' 32 bit integer hash function
  src : https://gist.github.com/badboy/6267743
@@ -15,6 +16,7 @@ zp_const zp_inline uint32_t hash(uint32_t a) {
  a = (a ^ 0xb55a4f09) ^ (a >> 16);
  return a;
 }
+
 zp_const zp_inline zp_hot uint32_t make_hash_id(uint16_t a, uint16_t b) {
  if(a > b) {
   uint16_t tmp = b;
@@ -54,7 +56,7 @@ zp_noinline zp_hot static void rehash_insert(zp_contacthash2d *const zp_restrict
 	next_index = zp_container_acquire(&hash->_memory_pool);
  assert((hash->_memory_pool._to_index_lut[next_index] < hash->_memory_pool._size) && "invalid id");
 	start_node = (zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, next_index);
-	start_node->_queried = 1;
+	start_node->_queried = 2;
 	start_node->_next = hash->_bucket[hash_index];
 	start_node->_prev = 0xFFFF;
 	start_node->_allocation = next_index;
@@ -147,6 +149,8 @@ void zp_contacthash2d_insert(zp_contacthash2d *const zp_restrict hash, const zp_
  hash->_bucket[hash_index] = next_index;
 }
 
+
+
 /*
  if its not queried, more likely collision does not exist anymore,
  so remove them.
@@ -203,6 +207,6 @@ uint8_t zp_contacthash2d_is_queried(zp_contacthash2d *const zp_restrict hash, co
  	it++;
 		next_index = start_node->_next;
  }
- return 0;
+ return 0xFF;
 }
 

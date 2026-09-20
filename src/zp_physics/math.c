@@ -66,19 +66,20 @@ zp_pure float zp_floor(const float x) {
  coeffs polynomial with lowest degree
  just acceptable enough for rough estimation
 */
-static const float COSINE[3] = {
 /* original coeffs */
 /*
   3.515696e-02f,
  -4.909662e-01f,
   1.00000000e-00f,
-*/
 
-/*  scaled coeffs */
+static const float COSINE[3] = {
+
+//  scaled coeffs
  2.97037352e-18f,
 -4.51285593e-09f,
  1.00000000e-00f,
 };
+*/
 
 /*
  scaled by the 
@@ -105,21 +106,21 @@ static const float COSINE[3] = {
   cos(theta) = x-axis of theta angle
   sin(theta) = y-axis of theta angle
 */ 
-
-void zp_sincos(const float theta, float *const zp_restrict s, float *const zp_restrict c) {
  /*
   convert to fixed point of (65536 / TAU)
   and use intentional overflow so we dont have to
   use remainder operation.
  */
+ /*
+void zp_sincos(const float theta, float *const zp_restrict s, float *const zp_restrict c) {
+
  uint16_t tx = (uint16_t)(uint32_t)(zp_abs(theta) * 10430.378350f);
  int16_t ix = (int16_t)tx;
  uint8_t fp = (tx >= 0x3FFF) && (tx <= 0xBFFF);
  ix = fp ? 0x7FFF - ix : ix;
- /*
-  convert it back
-  np_real t = ((np_real)ix) * 0.0000958738f;
- */
+ // convert it back
+ // np_real t = ((np_real)ix) * 0.0000958738f;
+ 
  float t = ((float)ix);
 
  float x2 = t * t;
@@ -128,8 +129,6 @@ void zp_sincos(const float theta, float *const zp_restrict s, float *const zp_re
  *c = fp ? -mx : mx;
  *s = ((theta < 0.0f) ^ (tx > 0x7FFF)) ? -mx1 : mx1;
 }
-
-
 
 zp_pure float zp_sin(const float theta) { 
  uint16_t tx = 0x3FFF - (uint16_t)(uint32_t)(theta * 10430.378350f);
@@ -153,6 +152,99 @@ zp_pure float zp_cos(const float theta) {
  float x2 = t * t;
  float mx = zp_fma(zp_fma(COSINE[0], x2, COSINE[1]), x2, COSINE[2]);
  return fp ? -mx : mx;
+}
+*/
+
+
+/*
+ approximation 1 degree
+ interval : [0.0:0.785398163397448309615660845820]
+ p(x) = (cos(sqrt(x))-1) / x
+ cos(x) = 1 + x2 * p(x2)
+ 
+ coeffs
+  0.040591002033280692f,
+ -0.49989513679207137f,
+ 
+ scaled 
+ 0.040591002033280692f * powf(M_PI*2 / 65536.0, 4)
+ -0.49989513679207137f * powf(M_PI*2 / 65536.0, 2)
+ 
+*/
+
+
+/*
+ new version of trig function.
+ slightly more expensive but it encreases the accuracy
+*/
+static float COSINE[2] = {
+  3.429489862425e-18f,
+ -4.594928810527e-09f,
+};
+
+void zp_sincos(const float theta, float *const zp_restrict s, float *const zp_restrict c) {
+ uint16_t tx = (uint16_t)(uint32_t)(zp_abs(theta) * 10430.378350f);
+ 
+ int16_t r = (int16_t)tx;
+ uint8_t fp = (tx >= 0x3FFF) && (tx <= 0xBFFF);
+ r = fp ? 0x7FFF - r : r;
+ uint8_t flip = r > 8192;
+ r = flip ? (16384 - r) : r;
+ 
+ float mx = ((float)r);
+ float x2 = mx * mx;
+ float cosine = zp_fma(x2, zp_fma(COSINE[0], x2, COSINE[1]), 1.0f);
+ float sine = zp_sqrt(1.0f - cosine * cosine);
+ 
+ float os, oc;
+ os = flip ? cosine : sine;
+ oc = flip ? sine : cosine;
+ os = ((theta < 0.0f) ^ (tx > 0x7FFF)) ? -os : os;
+ oc = fp ? -oc : oc;
+ *s = os;
+ *c = oc;
+}
+
+
+
+zp_pure float zp_sin(const float theta) { 
+ uint16_t tx = (uint16_t)(uint32_t)(zp_abs(theta) * 10430.378350f);
+ 
+ int16_t r = (int16_t)tx;
+ uint8_t fp = (tx >= 0x3FFF) && (tx <= 0xBFFF);
+ r = fp ? 0x7FFF - r : r;
+ uint8_t flip = r > 8192;
+ r = flip ? (16384 - r) : r;
+ 
+ float mx = ((float)r);
+ float x2 = mx * mx;
+ float cosine = zp_fma(x2, zp_fma(COSINE[0], x2, COSINE[1]), 1.0f);
+ float sine = zp_sqrt(1.0f - cosine * cosine);
+ 
+ float os;
+ os = flip ? cosine : sine;
+ return ((theta < 0.0f) ^ (tx > 0x7FFF)) ? -os : os;
+}
+
+
+
+zp_pure float zp_cos(const float theta) { 
+ uint16_t tx = (uint16_t)(uint32_t)(zp_abs(theta) * 10430.378350f);
+ 
+ int16_t r = (int16_t)tx;
+ uint8_t fp = (tx >= 0x3FFF) && (tx <= 0xBFFF);
+ r = fp ? 0x7FFF - r : r;
+ uint8_t flip = r > 8192;
+ r = flip ? (16384 - r) : r;
+ 
+ float mx = ((float)r);
+ float x2 = mx * mx;
+ float cosine = zp_fma(x2, zp_fma(COSINE[0], x2, COSINE[1]), 1.0f);
+ float sine = zp_sqrt(1.0f - cosine * cosine);
+ 
+ float oc;
+ oc = flip ? sine : cosine;
+ return fp ? -oc : oc;
 }
 
 
@@ -554,6 +646,7 @@ zp_pure float zp_rsqrt(const float x) {
  x_half =   x * 0.5f;
  f =        mx;
  f =        (f * (1.5f - (x_half * f * f)));
+ f =        (f * (1.5f - (x_half * f * f)));
  return f;
 }
 
@@ -566,6 +659,7 @@ zp_pure float zp_sqrt(const float x) {
  mx =       bits.f;
  x_half =   x * 0.5f;
  f =        mx;
+ f =        (f * (1.5f - (x_half * f * f)));
  f =        (f * (1.5f - (x_half * f * f)));
  return x * f;
 }

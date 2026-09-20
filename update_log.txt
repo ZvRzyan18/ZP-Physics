@@ -26,3 +26,8 @@
 
 • add bounciness response factor
 
+• improve zp_sincos, zp_sin and zp_cos functions
+
+• remove exact value check inside of zp_crotate
+
+• add pre calculated/updated version of r1, r2 and depth 
