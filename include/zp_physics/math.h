@@ -2,7 +2,7 @@
 #define ZP_MATH_H
 
 #include "zp_physics/hint.h"
-#include <math.h>
+
 
 ZP_CPP_BEGIN
 
@@ -53,7 +53,7 @@ zp_const zp_inline float zp_fma(const float a, const float b, const float c) {
  return result;
 #else
 */
- return fmaf(a, b, c);
+ return a * b + c;
 }
 
 /*
