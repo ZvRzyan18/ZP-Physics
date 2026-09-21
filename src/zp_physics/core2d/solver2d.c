@@ -40,8 +40,8 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
  for(uint8_t i = 0; i < m->_contact_count; i++) {
  	zp_contact2d *const contact = m->_contacts + i;
 
-  contact->_updated_r1 = zp_cmul(a_rot, contact->_r1);
-  contact->_updated_r2 = zp_cmul(b_rot, contact->_r2);
+  contact->_updated_r1 = zp_as_vector2(zp_cmul(a_rot, contact->_r1));
+  contact->_updated_r2 = zp_as_vector2(zp_cmul(b_rot, contact->_r2));
 
   float adjusted_depth = contact->_depth + zp_dot2(zp_sub2(contact->_updated_r2, contact->_updated_r1), contact->_normal);
   zp_vec2 p1 = zp_add2(a_pos, contact->_updated_r1);

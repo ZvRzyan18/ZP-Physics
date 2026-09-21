@@ -4,6 +4,7 @@
 #include "zp_physics/core2d.h"
 #include "zp_physics/complex.h"
 #include "zp_physics/container.h"
+#include "zp_physics/pool.h"
 
 /*
  bodies
@@ -26,6 +27,7 @@ typedef struct {
  float            _friction;
  float            _idle_time;
  
+ zp_pool_id       _aabb_node;
  zp_container_id  _id; /* minmize the byte size */
 } zp_head2d;
 

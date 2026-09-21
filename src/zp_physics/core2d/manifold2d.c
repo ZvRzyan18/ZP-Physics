@@ -342,8 +342,8 @@ uint8_t zp_manifold2d_box_vs_box(zp_manifold2d *const zp_restrict out, const zp_
     contact->_id = zp_swap_contact(ids[i]);
     zp_vec2 local_ra = zp_sub2(edge[i], zp_load2(ref_transform.basis[2].arr));
     zp_vec2 local_rb = zp_sub2(edge[i], zp_load2(inc_transform.basis[2].arr));
-    contact->_r1 = zp_cmul(inv_ref_rotation, local_ra);
-    contact->_r2 = zp_cmul(inv_inc_rotation, local_rb);
+    contact->_r1 = zp_cmul(inv_ref_rotation, zp_as_complex2(local_ra));
+    contact->_r2 = zp_cmul(inv_inc_rotation, zp_as_complex2(local_rb));
     contact->_depth = depth;
     contact->_normal = ref_axis;
     out->_contact_count++;
@@ -362,8 +362,8 @@ uint8_t zp_manifold2d_box_vs_box(zp_manifold2d *const zp_restrict out, const zp_
     contact->_id = ids[i];
     zp_vec2 local_ra = zp_sub2(edge[i], zp_load2(ref_transform.basis[2].arr));
     zp_vec2 local_rb = zp_sub2(edge[i], zp_load2(inc_transform.basis[2].arr));
-    contact->_r1 = zp_cmul(inv_ref_rotation, local_ra);
-    contact->_r2 = zp_cmul(inv_inc_rotation, local_rb);
+    contact->_r1 = zp_cmul(inv_ref_rotation, zp_as_complex2(local_ra));
+    contact->_r2 = zp_cmul(inv_inc_rotation, zp_as_complex2(local_rb));
     contact->_depth = depth;
     contact->_normal = ref_axis;
     out->_contact_count++;
