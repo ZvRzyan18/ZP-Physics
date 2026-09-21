@@ -28,21 +28,14 @@ zp_const uint32_t zp_nextp2(const uint32_t x) {
  return ++mx;
 }
 
-/*
- 2^23, large enough to completly round off fractionals
-*/
-static const float HUGE_NUM[4] = {
- 8388608.0f, -8388608.0f,
- -8388608.0f, 8388608.0f,
-};
-/*
- round to nearest, every .5 it increases.
-*/
+
 zp_pure float zp_round(const float x) {
-	__f_floatbits bits;
-	bits.f = x;
-	const float*const huge = HUGE_NUM + ((bits.i >> 31) << 1);
-	return (x + huge[0]) + huge[1];
+ float mx = zp_abs(x);
+ int i = (int)mx;
+ float frac = mx - ((float)i);
+ if(frac > 0.5f)
+  return zp_copysign(zp_ceil(mx), x);
+ return zp_copysign(zp_floor(mx), x);
 }
 
 /*

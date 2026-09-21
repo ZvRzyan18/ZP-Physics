@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-
+#include "zp_physics/hint.h"
 
 /*
  NOTE : DONT OVERLAP THE VALUES POINTER, DOING SO MIGHT RESULT IN UNDEFINED BEHAVIOUR
@@ -39,7 +39,12 @@ typedef union {
 
 typedef uint32_t zp_handle;
 
+#ifdef zp_has_complex_extension
+typedef __complex__ float zp_complex;
+#else
 typedef zp_vec2 zp_complex;
+#endif
+
 typedef zp_vec4 zp_quaternion;
 
 #endif

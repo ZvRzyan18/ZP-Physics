@@ -28,11 +28,10 @@ zp_hot zp_inline void update_aabb(zp_body2d *const zp_restrict body) {
   {
    zp_box2d *const box = &body->_box;
    zp_vec2 rv;
-   zp_complex r = body->_head._rotation;
+   zp_complex r = zp_cabs(body->_head._rotation);
 
-   r = zp_abs2(r);
-   rv.x = zp_fma(box->_half_size.x, r.x, box->_half_size.y * r.y);
-   rv.y = zp_fma(box->_half_size.x, r.y, box->_half_size.y * r.x);
+   rv.x = zp_fma(box->_half_size.x, zp_creal(r), box->_half_size.y * zp_cimag(r));
+   rv.y = zp_fma(box->_half_size.x, zp_cimag(r), box->_half_size.y * zp_creal(r));
    body->_head._aabb[0] = zp_sub2(body->_head._position, rv);
    body->_head._aabb[1] = zp_add2(body->_head._position, rv);
   }
@@ -43,9 +42,6 @@ zp_hot zp_inline void update_aabb(zp_body2d *const zp_restrict body) {
   break;
  }
 }
-
-
-extern void sincosf(float x, float *s, float *c);
 
 
 
@@ -88,10 +84,10 @@ void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_r
  if(update_rotation) {
   float omega = body->_head._omega * dt;
   zp_complex omega_complex;
-  omega_complex.x = 1.0f - 0.5f * omega * omega;
-  omega_complex.y = omega;
+  zp_set_real(&omega_complex, 1.0f - 0.5f * omega * omega);
+  zp_set_imag(&omega_complex, omega);
   body->_head._rotation = zp_cmul(omega_complex, body->_head._rotation);
-  body->_head._rotation = zp_unit2(body->_head._rotation);
+  body->_head._rotation = zp_cunit(body->_head._rotation);
  }
   
 

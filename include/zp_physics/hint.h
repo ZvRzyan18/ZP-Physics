@@ -25,6 +25,7 @@
 
 
 #if defined(__clang__) || defined(__GNUC__)
+#define zp_has_complex_extension
 
 #define zp_likely(x)   __builtin_expect(!!(x), 1)
 #define zp_unlikely(x) __builtin_expect(!!(x), 0)

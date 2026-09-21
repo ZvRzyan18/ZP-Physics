@@ -25,8 +25,8 @@ typedef union {
  per contact points info
 */
 typedef struct {
- zp_vec2  _r1;
- zp_vec2  _r2;
+ zp_complex  _r1;
+ zp_complex  _r2;
  
  zp_vec2  _updated_r1;
  zp_vec2  _updated_r2;

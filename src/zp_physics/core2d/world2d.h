@@ -5,10 +5,15 @@
 #include "zp_physics/container.h"
 #include "zp_physics/core2d/contacthash2d.h"
 
+#include "zp_physics/core2d/broadphase2d.h"
+
+
 struct zp_world2d {
  /* NOTE : this can change anytime, breaking compatibility, so do not access */
  zp_container     _body_container;
  zp_contacthash2d _contacts;
+ zp_broadphase2d  _broadphase;
+ 
  zp_vec2          _gravity;
  float            _inv_timestep_substep;
  float            _growth_base;

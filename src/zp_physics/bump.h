@@ -13,7 +13,7 @@ typedef struct {
 
 ZP_CPP_BEGIN
 
-zp_cold int zp_bump_init(zp_bump *zp_restrict b, size_t max_size);
+zp_cold int zp_bump_init(zp_bump *zp_restrict b, size_t initial_size);
 zp_cold void zp_bump_destroy(zp_bump *zp_restrict b);
 size_t zp_bump_acquire(zp_bump *zp_restrict b, uint16_t requested_bytes, uint8_t alignment);
 void zp_bump_reset(zp_bump *zp_restrict b, size_t offset);

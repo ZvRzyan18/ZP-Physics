@@ -31,3 +31,9 @@
 • remove exact value check inside of zp_crotate
 
 • add pre calculated/updated version of r1, r2 and depth 
+
+• use gcc/clang complex number extension
+
+• change zp_round to a more predictable code
+
+• dynamic aabb binary tree integration
