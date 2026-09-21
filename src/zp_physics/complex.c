@@ -1,18 +1,23 @@
 #include "zp_physics/complex.h"
 
+#ifdef zp_has_complex_extension
+zp_complex zp_complex_identity = 1.0f + 0.0fi;
+#else
 zp_complex zp_complex_identity = {.x = 1.0f, .y = 0.0f};
+#endif
+
 zp_quaternion zp_quaternion_identity = {.x = 0.0f, .y = 0.0f, .z = 0.0f, .w = 1.0f};
 
 
 zp_complex zp_crotate(const float radians) {
- zp_complex out;
+ zp_vec2 out;
  zp_sincos(radians, &out.y, &out.x);
- return out;
+ return zp_as_complex2(out);
 }
 
 
 float zp_cangle(const zp_complex c) {
- return zp_atan2(c.y, c.x);
+ return zp_atan2(zp_cimag(c), zp_creal(c));
 }
 
 
