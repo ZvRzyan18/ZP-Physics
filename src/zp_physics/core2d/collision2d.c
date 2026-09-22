@@ -23,10 +23,10 @@ uint8_t zp_collision2d_collide(zp_manifold2d *const zp_restrict out, const zp_bo
  if(((a->_head._flags & ZP_BODY_MOVEMENT_MASK_2D) == ZP_BODY_MOVEMENT_STATIC_2D) && ((b->_head._flags & ZP_BODY_MOVEMENT_MASK_2D) == ZP_BODY_MOVEMENT_STATIC_2D)) 
   return 0;
  
- const zp_vec2 *const ba = a->_head._aabb;
- const zp_vec2 *const bb = b->_head._aabb;
+ const zp_aabb2d ba = a->_head._fit_aabb;
+ const zp_aabb2d bb = b->_head._fit_aabb;
  /* aabb checks */
- if((ba[1].x < bb[0].x || ba[0].x > bb[1].x || ba[1].y < bb[0].y || ba[0].y > bb[1].y))
+ if((ba._max.x < bb._min.x || ba._min.x > bb._max.x || ba._max.y < bb._min.y || ba._min.y > bb._max.y))
   return 0;
  return function_luts[a->_head._flags & ZP_BODY_MASK_2D][b->_head._flags & ZP_BODY_MASK_2D](out, a, b);
 

@@ -31,20 +31,20 @@ zp_const zp_inline zp_hot uint32_t make_hash_id(uint16_t a, uint16_t b) {
  same as insert function, but no rehash to avoid recursion.
 */
 zp_noinline zp_hot static void rehash_insert(zp_contacthash2d *const zp_restrict hash, const zp_manifold2d *const zp_restrict m) {
- const uint16_t hash_index = make_hash_id(m->_body_a, m->_body_b) & hash->_bucket_index_mask;
+ const size_t hash_index = make_hash_id(m->_body_a._val, m->_body_b._val) & hash->_bucket_index_mask;
 
  zp_contacthash2d_node *start_node = NULL;
 
- uint16_t next_index = hash->_bucket[hash_index];
- uint16_t it = 0;
+ zp_container_id next_index = hash->_bucket[hash_index];
+ size_t it = 0;
 
 
- while(next_index != 0xFFFF) {
+ while(!zp_container_id_isnull(next_index)) {
   assert((it < hash->_memory_pool._size) && "infinite loop.");
-  assert((hash->_memory_pool._to_index_lut[next_index] < hash->_memory_pool._size) && "invalid id");
+  assert((hash->_memory_pool._to_index_lut[next_index._val]._val < hash->_memory_pool._size) && "invalid id");
  	start_node = (zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, next_index);
 
- 	if((start_node->_value._body_a == m->_body_a && start_node->_value._body_b == m->_body_b) || (start_node->_value._body_a == m->_body_b && start_node->_value._body_b == m->_body_a)) {
+ 	if((zp_container_id_isequal(start_node->_value._body_a, m->_body_a) && zp_container_id_isequal(start_node->_value._body_b, m->_body_b)) || (zp_container_id_isequal(start_node->_value._body_a, m->_body_b) && zp_container_id_isequal(start_node->_value._body_b, m->_body_a))) {
  	 start_node->_queried = 1;
  	 zp_manifold2d_combine(&start_node->_value, m);
  	 return;
@@ -54,16 +54,16 @@ zp_noinline zp_hot static void rehash_insert(zp_contacthash2d *const zp_restrict
  }
   
 	next_index = zp_container_acquire(&hash->_memory_pool);
- assert((hash->_memory_pool._to_index_lut[next_index] < hash->_memory_pool._size) && "invalid id");
+ assert((hash->_memory_pool._to_index_lut[next_index._val]._val < hash->_memory_pool._size) && "invalid id");
 	start_node = (zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, next_index);
 	start_node->_queried = 2;
 	start_node->_next = hash->_bucket[hash_index];
-	start_node->_prev = 0xFFFF;
+	start_node->_prev = ZP_CONTAINER_NULL_ID;
 	start_node->_allocation = next_index;
  memcpy(&start_node->_value, m, sizeof(zp_manifold2d));
  
- if(hash->_bucket[hash_index] != 0xFFFF) {
- 	assert((hash->_memory_pool._to_index_lut[hash->_bucket[hash_index]] < hash->_memory_pool._size) && "invalid id");
+ if(!zp_container_id_isnull(hash->_bucket[hash_index])) {
+ 	assert((hash->_memory_pool._to_index_lut[hash->_bucket[hash_index]._val]._val < hash->_memory_pool._size) && "invalid id");
  	start_node = (zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, hash->_bucket[hash_index]);
 	 start_node->_prev = next_index;
  }
@@ -77,11 +77,11 @@ zp_noinline zp_hot static void rehash_insert(zp_contacthash2d *const zp_restrict
  this able to handle large data loads, no cluster issue and 
  somehow cache friendly 
 */
-zp_cold int zp_contacthash2d_init(zp_contacthash2d *const zp_restrict hash, const uint16_t bucket_size, const uint16_t reserve, const float growth_base) {
+zp_cold int zp_contacthash2d_init(zp_contacthash2d *const zp_restrict hash, const size_t bucket_size, const size_t reserve, const float growth_base) {
  hash->_bucket_size = zp_nextp2(bucket_size);
  hash->_bucket_index_mask = hash->_bucket_size - 1;
- hash->_bucket = (uint16_t*)malloc(sizeof(uint16_t) * hash->_bucket_size);
- memset(hash->_bucket, 0xFF, sizeof(uint16_t) * hash->_bucket_size);
+ hash->_bucket = (zp_container_id*)malloc(sizeof(zp_container_id) * hash->_bucket_size);
+ memset(hash->_bucket, 0xFF, sizeof(zp_container_id) * hash->_bucket_size);
 
  if(zp_unlikely(zp_container_init(&hash->_memory_pool, sizeof(zp_contacthash2d_node), reserve, growth_base)))
   return -1;
@@ -110,20 +110,20 @@ void zp_contacthash2d_insert(zp_contacthash2d *const zp_restrict hash, const zp_
   memcpy(hash, &new_hash, sizeof(zp_contacthash2d));
  }
  
- const uint16_t hash_index = make_hash_id(m->_body_a, m->_body_b) & hash->_bucket_index_mask;
+ const size_t hash_index = make_hash_id(m->_body_a._val, m->_body_b._val) & hash->_bucket_index_mask;
 
  zp_contacthash2d_node *start_node = NULL;
 
- uint16_t next_index = hash->_bucket[hash_index];
- uint16_t it = 0;
+ zp_container_id next_index = hash->_bucket[hash_index];
+ size_t it = 0;
 
 
- while(next_index != 0xFFFF) {
+ while(!zp_container_id_isnull(next_index)) {
   assert((it < hash->_memory_pool._size) && "infinite loop.");
-  assert((hash->_memory_pool._to_index_lut[next_index] < hash->_memory_pool._size) && "invalid id");
+  assert((hash->_memory_pool._to_index_lut[next_index._val]._val < hash->_memory_pool._size) && "invalid id");
  	start_node = (zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, next_index);
 
- 	if((start_node->_value._body_a == m->_body_a && start_node->_value._body_b == m->_body_b) || (start_node->_value._body_a == m->_body_b && start_node->_value._body_b == m->_body_a)) {
+ 	if((zp_container_id_isequal(start_node->_value._body_a, m->_body_a) && zp_container_id_isequal(start_node->_value._body_b, m->_body_b)) || (zp_container_id_isequal(start_node->_value._body_a, m->_body_b) && zp_container_id_isequal(start_node->_value._body_b, m->_body_a))) {
  	 start_node->_queried = 1;
  	 zp_manifold2d_combine(&start_node->_value, m);
  	 return;
@@ -133,16 +133,16 @@ void zp_contacthash2d_insert(zp_contacthash2d *const zp_restrict hash, const zp_
  }
  
 	next_index = zp_container_acquire(&hash->_memory_pool);
- assert((hash->_memory_pool._to_index_lut[next_index] < hash->_memory_pool._size) && "invalid id");
+ assert((hash->_memory_pool._to_index_lut[next_index._val]._val < hash->_memory_pool._size) && "invalid id");
 	start_node = (zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, next_index);
 	start_node->_queried = 1;
 	start_node->_next = hash->_bucket[hash_index];
-	start_node->_prev = 0xFFFF;
+	start_node->_prev = ZP_CONTAINER_NULL_ID;
 	start_node->_allocation = next_index;
  memcpy(&start_node->_value, m, sizeof(zp_manifold2d));
  
- if(hash->_bucket[hash_index] != 0xFFFF) {
- 	assert((hash->_memory_pool._to_index_lut[hash->_bucket[hash_index]] < hash->_memory_pool._size) && "invalid id");
+ if(!zp_container_id_isnull(hash->_bucket[hash_index])) {
+ 	assert((hash->_memory_pool._to_index_lut[hash->_bucket[hash_index]._val]._val < hash->_memory_pool._size) && "invalid id");
  	start_node = (zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, hash->_bucket[hash_index]);
 	 start_node->_prev = next_index;
  }
@@ -164,18 +164,18 @@ void zp_contacthash2d_remove_unused(zp_contacthash2d *const zp_restrict hash) {
   if(current_node->_queried) {
    current_node->_queried = 0;
   } else {
-   if(current_node->_prev != 0xFFFF) {
-     assert((hash->_memory_pool._to_index_lut[current_node->_prev] < hash->_memory_pool._size) && "invalid id");
+   if(!zp_container_id_isnull(current_node->_prev)) {
+     assert((hash->_memory_pool._to_index_lut[current_node->_prev._val]._val < hash->_memory_pool._size) && "invalid id");
     ((zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, current_node->_prev))->_next = current_node->_next;
    } else
-    hash->_bucket[make_hash_id(current_node->_value._body_a, current_node->_value._body_b) & hash->_bucket_index_mask] = current_node->_next;
+    hash->_bucket[make_hash_id(current_node->_value._body_a._val, current_node->_value._body_b._val) & hash->_bucket_index_mask] = current_node->_next;
   
-   if(current_node->_next != 0xFFFF) {
-    assert((hash->_memory_pool._to_index_lut[current_node->_next] < hash->_memory_pool._size) && "invalid id");
+   if(!zp_container_id_isnull(current_node->_next)) {
+    assert((hash->_memory_pool._to_index_lut[current_node->_next._val]._val < hash->_memory_pool._size) && "invalid id");
     ((zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, current_node->_next))->_prev = current_node->_prev;
    }
     
-   assert((hash->_memory_pool._to_index_lut[current_node->_allocation] < hash->_memory_pool._size) && "invalid id");
+   assert((hash->_memory_pool._to_index_lut[current_node->_allocation._val]._val < hash->_memory_pool._size) && "invalid id");
    zp_container_release(&hash->_memory_pool, current_node->_allocation);
    continue;
   }
@@ -188,20 +188,20 @@ void zp_contacthash2d_remove_unused(zp_contacthash2d *const zp_restrict hash) {
  TODO : needs to be fast, since its used to check if its recently queried 
  and eliminate the duplicates.
 */
-uint8_t zp_contacthash2d_is_queried(zp_contacthash2d *const zp_restrict hash, const uint16_t a, const uint16_t b) {
- const uint16_t hash_index = make_hash_id(a, b	) & hash->_bucket_index_mask;
+uint8_t zp_contacthash2d_is_queried(zp_contacthash2d *const zp_restrict hash, const zp_container_id a, const zp_container_id b) {
+ const size_t hash_index = make_hash_id(a._val, b._val) & hash->_bucket_index_mask;
  zp_contacthash2d_node *start_node = NULL;
 
- uint16_t next_index = hash->_bucket[hash_index];
- uint16_t it = 0;
+ zp_container_id next_index = hash->_bucket[hash_index];
+ size_t it = 0;
 
 
- while(next_index != 0xFFFF) {
+ while(!zp_container_id_isnull(next_index)) {
   assert((it < hash->_memory_pool._size) && "infinite loop.");
-  assert((hash->_memory_pool._to_index_lut[next_index] < hash->_memory_pool._size) && "invalid id");
+  assert((hash->_memory_pool._to_index_lut[next_index._val]._val < hash->_memory_pool._size) && "invalid id");
  	start_node = (zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, next_index);
 
- 	if((start_node->_value._body_a == a && start_node->_value._body_b == b) || (start_node->_value._body_a == b && start_node->_value._body_b == a)) {
+ 	if((zp_container_id_isequal(start_node->_value._body_a, a) && zp_container_id_isequal(start_node->_value._body_b, b)) || (zp_container_id_isequal(start_node->_value._body_a, b) && zp_container_id_isequal(start_node->_value._body_b, a))) {
 	  return start_node->_queried;
  	}
  	it++;

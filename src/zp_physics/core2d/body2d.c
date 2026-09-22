@@ -32,8 +32,8 @@ zp_hot zp_inline void update_aabb(zp_body2d *const zp_restrict body) {
 
    rv.x = zp_fma(box->_half_size.x, zp_creal(r), box->_half_size.y * zp_cimag(r));
    rv.y = zp_fma(box->_half_size.x, zp_cimag(r), box->_half_size.y * zp_creal(r));
-   body->_head._aabb[0] = zp_sub2(body->_head._position, rv);
-   body->_head._aabb[1] = zp_add2(body->_head._position, rv);
+   body->_head._fit_aabb._min = zp_sub2(body->_head._position, rv);
+   body->_head._fit_aabb._max = zp_add2(body->_head._position, rv);
   }
   break;
   default :
@@ -45,8 +45,7 @@ zp_hot zp_inline void update_aabb(zp_body2d *const zp_restrict body) {
 
 
 
-void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt) {
-
+zp_hot void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt) {
  const zp_world2d *const ctx = (zp_world2d*)world;
  const zp_vec2 dt_vec = zp_stv2(dt);
  const zp_vec2 inv_mass = zp_stv2(body->_head._inv_mass);
@@ -63,18 +62,18 @@ void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *const zp_r
 
 
 
-void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt) {
+zp_hot void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt) {
  (void)world;
 
  zp_vec2 dt_vec = zp_stv2(dt);
 
  float ld = zp_exp2(dt * body->_head._linear_damping);
+ float ad = zp_exp2(dt * body->_head._angular_damping);
  body->_head._velocity.x *= ld;
  body->_head._velocity.y *= ld;
-   
- body->_head._omega *= zp_exp2(dt * body->_head._angular_damping);
-
- const float o_epsilon = 0.001f;
+ body->_head._omega *= ad;
+ 
+ const float o_epsilon = 0.01f;
  const float v_epsilon = 0.1f;
  
  float dt_a = zp_dot2(body->_head._velocity, body->_head._velocity);
@@ -83,9 +82,17 @@ void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_r
  uint8_t update_position = dt_a > v_epsilon;
  if(update_rotation) {
   float omega = body->_head._omega * dt;
+ 
   zp_complex omega_complex;
-  zp_set_real(&omega_complex, 1.0f - 0.5f * omega * omega);
-  zp_set_imag(&omega_complex, omega);
+  if(zp_abs(omega) < 0.06f) {
+   zp_set_real(&omega_complex, 1.0f - 0.5f * omega * omega);
+   zp_set_imag(&omega_complex, omega);
+  } else {
+   float sine, cosine;
+   zp_sincos(omega, &sine, &cosine);
+   zp_set_real(&omega_complex, cosine);
+   zp_set_imag(&omega_complex, sine);
+  }
   body->_head._rotation = zp_cmul(omega_complex, body->_head._rotation);
   body->_head._rotation = zp_cunit(body->_head._rotation);
  }
@@ -117,7 +124,7 @@ zp_cold zp_noinline static void init_box(zp_box2d *const zp_restrict body, const
  body->_head._angular_damping = zp_log2(data->_angular_damping);
  body->_head._restitution = data->_restitution;
  body->_head._friction = data->_friction;
-
+ 
  update_aabb((zp_body2d*)body);
 
  switch(data->_flags & ZP_BODY_MOVEMENT_MASK_2D) {
