@@ -5,7 +5,10 @@
 #include "zp_physics/hint.h"
 
 
-ZP_CPP_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 extern zp_mat3x3 zp_mat3x3_identity;
 extern zp_mat4x4 zp_mat4x4_identity;
@@ -28,7 +31,10 @@ zp_vec3 zp_mulm4v3(const zp_mat4x4 a, const zp_vec3 b);
 
 
 
-ZP_CPP_END
+#ifdef __cplusplus
+}
+#endif
+
 
 
 #endif

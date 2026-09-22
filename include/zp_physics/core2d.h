@@ -24,27 +24,38 @@
 #define ZP_JOINT_FIXED_2D             0b0000000000000010
 
 /* external handle states. */
-#define ZP_HANDLE_FLAG_MASK          (0b0000000000000011 << 16)
-#define ZP_HANDLE_FLAG_IS_BODY       (0b0000000000000001 << 16)
-#define ZP_HANDLE_FLAG_IS_JOINT      (0b0000000000000010 << 16)
-#define ZP_HANDLE_FLAG_IS_SENSOR     (0b0000000000000011 << 16)
-
-/* broadphase algorithm */
-#define ZP_BROADPHASE_BRUITE_FORCE_2D  1
-#define ZP_BROADPHASE_SWEEP_N_PRUNE_2D 2
-#define ZP_BROADPHASE_BVH_TREE_2D      3
+#define ZP_HANDLE_FLAG_IS_BODY        0b00000001
+#define ZP_HANDLE_FLAG_IS_JOINT       0b00000010
+#define ZP_HANDLE_FLAG_IS_SENSOR      0b00000011
 
 
 /*
  create infos
 */
+
+
 typedef struct {
+ struct {
+  size_t    _broadphase_stack_bytes_inital_reserve;
+  float     _growth_base_rate;
+  uint16_t  _bodies_initial_reserve;
+  uint16_t  _joints_initial_reserve;
+  uint16_t  _contacts_initial_reserve;
+  uint16_t  _max_buckets_initial_reserve;
+ } _memory;
+ 
+ struct {
+  float   _aabb_margin;
+  uint8_t _frame_tolerance;
+ } _broadphase_info;
+ 
+ struct {
+  float   _hertz;
+  float   _damping_ratio;
+ } _contact_constraint;
+ 
+ 
  zp_vec2  _gravity;
- float    _growth_base_rate;
- uint16_t _bodies_initial_reserve;
- uint16_t _joints_initial_reserve;
- uint16_t _contacts_initial_reserve;
- uint8_t  _hash_max_buckets;
  uint8_t  _solver_substeps;
  uint8_t  _time_substeps;
 } zp_create_world2d;
@@ -78,7 +89,9 @@ typedef struct {
 
 typedef struct zp_world2d zp_world2d;
 
-ZP_CPP_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 zp_cold int zp_world2d_init(zp_world2d **const zp_restrict world, const zp_create_world2d *const zp_restrict data);
 zp_cold void zp_world2d_destroy(zp_world2d *const zp_restrict world);
@@ -86,8 +99,12 @@ zp_hot void zp_world2d_update(zp_world2d *const zp_restrict world, const float d
 zp_handle zp_world2d_create_body(zp_world2d *const zp_restrict world, const void *const zp_restrict value);
 void zp_world2d_remove_body(zp_world2d *const zp_restrict world, const zp_handle id);
 zp_hot void zp_world2d_get_bodydata(zp_world2d *const zp_restrict world, const zp_handle id, zp_bodydata2d *const zp_restrict dat);
+zp_cold void zp_world2d_greedy_rebuild_tree(zp_world2d *const zp_restrict world);
+zp_cold void zp_world2d_optimize_rebuild_tree(zp_world2d *const zp_restrict world);
 
-ZP_CPP_END
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

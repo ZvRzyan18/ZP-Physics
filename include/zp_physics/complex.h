@@ -5,8 +5,13 @@
 #include "zp_physics/math.h"
 #include "zp_physics/vector.h"
 
-ZP_CPP_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/*
+ complex extension is faster than vector2
+*/
 extern zp_complex zp_complex_identity;
 extern zp_quaternion zp_quaternion_identity;
 
@@ -145,7 +150,9 @@ zp_quaternion zp_qfromaxisangle(const float a, const float x, const float y, con
 zp_vec4 zp_qtoaxisangle(const zp_quaternion a);
 
 
-ZP_CPP_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

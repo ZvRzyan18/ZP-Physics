@@ -12,15 +12,6 @@
 #endif
 
 
-#ifdef __cplusplus
-#define ZP_CPP_BEGIN extern "C" {
-#define ZP_CPP_END }
-#else
-#define ZP_CPP_BEGIN
-#define ZP_CPP_END
-#endif
-
-
 #define ZP_MEMORY_ALIGNMENT 16
 
 
