@@ -4,7 +4,9 @@
 #include "zp_physics/hint.h"
 
 
-ZP_CPP_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef union {
 	float f;
@@ -142,7 +144,9 @@ zp_pure float zp_rsqrt(const float x);
 zp_pure float zp_sqrt(const float x);
 
 
-ZP_CPP_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

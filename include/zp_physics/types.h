@@ -5,9 +5,7 @@
 #include <stddef.h>
 #include "zp_physics/hint.h"
 
-/*
- NOTE : DONT OVERLAP THE VALUES POINTER, DOING SO MIGHT RESULT IN UNDEFINED BEHAVIOUR
-*/
+
 typedef union {
  struct {	float x, y; };
  float arr[2];
@@ -36,8 +34,22 @@ typedef union {
 } zp_mat4x4;
 
 
+#ifdef ZP_USE_32BIT_ID
+#define ZP_ID_MAX 0xFFFFFFFF
+#define ZP_ID_SIZE 4
+typedef uint32_t __zp_uid;
+#else
+#define ZP_ID_MAX 0xFFFF
+#define ZP_ID_SIZE 2
+typedef uint16_t __zp_uid;
+#endif
 
-typedef uint32_t zp_handle;
+
+
+typedef struct {
+ __zp_uid _id;
+ uint8_t  _flag;
+} zp_handle;
 
 #ifdef zp_has_complex_extension
 typedef __complex__ float zp_complex;
