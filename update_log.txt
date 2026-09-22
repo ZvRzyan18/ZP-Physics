@@ -37,3 +37,21 @@
 • change zp_round to a more predictable code
 
 • dynamic aabb binary tree integration
+
+• expose more configuration during world2d creation
+
+• use growth base value for bump
+
+• convert zp_pool_id into struct for type safety
+
+• optimize tree rebuild from Botom up pairwise to top down median split
+
+• expose tree greedy optimize pre rebuild
+
+• switch zp_container_id into struct for type safety
+
+• fixed infinite loop bug during hash table insertion
+
+• switch zp_handle into struct for type safety
+
+• add feature that can switch between 16-bit and 32-bit ids

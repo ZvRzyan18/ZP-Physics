@@ -30,12 +30,8 @@ zp_const uint32_t zp_nextp2(const uint32_t x) {
 
 
 zp_pure float zp_round(const float x) {
- float mx = zp_abs(x);
- int i = (int)mx;
- float frac = mx - ((float)i);
- if(frac > 0.5f)
-  return zp_copysign(zp_ceil(mx), x);
- return zp_copysign(zp_floor(mx), x);
+ int a = (int)(x + (x >= 0.0f ? 0.5f : -0.5f));
+ return (float)a;
 }
 
 /*
@@ -64,6 +60,7 @@ zp_pure float zp_floor(const float x) {
   3.515696e-02f,
  -4.909662e-01f,
   1.00000000e-00f,
+*/
 
 static const float COSINE[3] = {
 
@@ -72,7 +69,7 @@ static const float COSINE[3] = {
 -4.51285593e-09f,
  1.00000000e-00f,
 };
-*/
+
 
 /*
  scaled by the 
@@ -104,7 +101,7 @@ static const float COSINE[3] = {
   and use intentional overflow so we dont have to
   use remainder operation.
  */
- /*
+ 
 void zp_sincos(const float theta, float *const zp_restrict s, float *const zp_restrict c) {
 
  uint16_t tx = (uint16_t)(uint32_t)(zp_abs(theta) * 10430.378350f);
@@ -146,7 +143,6 @@ zp_pure float zp_cos(const float theta) {
  float mx = zp_fma(zp_fma(COSINE[0], x2, COSINE[1]), x2, COSINE[2]);
  return fp ? -mx : mx;
 }
-*/
 
 
 /*
@@ -170,6 +166,7 @@ zp_pure float zp_cos(const float theta) {
  new version of trig function.
  slightly more expensive but it encreases the accuracy
 */
+/*
 static float COSINE[2] = {
   3.429489862425e-18f,
  -4.594928810527e-09f,
@@ -239,7 +236,7 @@ zp_pure float zp_cos(const float theta) {
  oc = flip ? sine : cosine;
  return fp ? -oc : oc;
 }
-
+*/
 
 
 float zp_tan(const float theta) {

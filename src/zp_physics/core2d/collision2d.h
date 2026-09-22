@@ -4,11 +4,7 @@
 #include "zp_physics/hint.h"
 #include "zp_physics/core2d/manifold2d.h"
 
-ZP_CPP_BEGIN
-
-uint8_t zp_collision2d_collide(zp_manifold2d *const zp_restrict out, const zp_body2d *zp_restrict a, const zp_body2d *zp_restrict b); 
-
-ZP_CPP_END
+uint8_t zp_collision2d_collide(zp_manifold2d *const zp_restrict out, const zp_body2d *zp_restrict a, const zp_body2d *zp_restrict b);
 
 #endif
 

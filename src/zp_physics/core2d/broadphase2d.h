@@ -6,12 +6,8 @@
 #include "zp_physics/container.h"
 #include "zp_physics/container.h"
 #include "zp_physics/bump.h"
+#include "zp_physics/core2d/body2d.h"
 
-
-typedef struct {
- zp_vec2 _min;
- zp_vec2 _max;
-} zp_aabb2d;
 
 typedef struct {
  zp_aabb2d _aabb;
@@ -34,13 +30,14 @@ typedef struct {
  uint8_t    _frame_tolerance;
 } zp_broadphase2d;
 
-int zp_broadphase2d_init(zp_broadphase2d *zp_restrict const bp, const float growth_base, const float aabb_margin);
+int zp_broadphase2d_init(zp_broadphase2d *zp_restrict const bp, const float growth_base, const float aabb_margin, const size_t stack_initial_size);
 void zp_broadphase2d_destroy(zp_broadphase2d *zp_restrict const bp);
 void zp_broadphase2d_update_element(zp_broadphase2d *zp_restrict const bp, const zp_pool_id id, const zp_aabb2d fit);
 zp_pool_id zp_broadphase2d_insert_element(zp_broadphase2d *zp_restrict const bp, const zp_aabb2d fit, const zp_container_id body_id);
 void zp_broadphase2d_remove_element(zp_broadphase2d *zp_restrict const bp, const zp_pool_id id);
 
 void zp_broadphase2d_traverse_pairs(zp_broadphase2d *zp_restrict const bp, void (*func)(zp_container_id, zp_container_id, void*), void *ptr);
+void zp_broadphase2d_greedy_rebuild_tree(zp_broadphase2d *zp_restrict const bp, void *zp_restrict w);
 void zp_broadphase2d_optimize_tree(zp_broadphase2d *zp_restrict const bp, void *zp_restrict w);
 int zp_broadphase2d_should_rebuild(zp_broadphase2d *zp_restrict const bp, uint8_t frame_tolerance);
 

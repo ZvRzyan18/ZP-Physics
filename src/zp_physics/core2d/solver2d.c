@@ -71,8 +71,6 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
   */
   zp_vec2 relative_vel = zp_sub2(b_velocity, a_velocity);
   float impact_speed = zp_dot2(relative_vel, contact->_normal);
-  
-  float bounciness_response_factor = 0.28f;
   /* 
    hyperbolic tangent gives a smooth transition betweew low and max resitution coeffs
 
@@ -101,11 +99,8 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
   -------------------------------------
   
   */
-  
-  float x = impact_speed * bounciness_response_factor;
+  float x = impact_speed * 0.2f;
   contact->_bias = (impact_speed * e) * zp_tanh(zp_min(x, 0.0f));
-
-
  }
 }
 

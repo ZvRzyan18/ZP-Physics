@@ -4,6 +4,9 @@
 #include <string.h>
 #include <stdio.h>
 
+static_assert(sizeof(zp_container_id) == ZP_ID_SIZE, "not expected size");
+const zp_container_id ZP_CONTAINER_NULL_ID = {._val = ZP_ID_MAX};
+
 zp_hot zp_inline void memswap(void *zp_restrict const a, void *zp_restrict const b, const size_t stride) {
  assert(stride < 512);
  
@@ -18,7 +21,7 @@ zp_cold zp_noinline static int resize(zp_container *const zp_restrict c) {
  zp_container new_container;
  /* not exact, but still it can grow in a decent way, and able to minimize the realloc */
 
-	new_container._reserve = c->_reserve + (zp_container_id)zp_ceil(zp_exp2(((float)++c->_increase_count) * c->_growth_base));
+	new_container._reserve = c->_reserve + (size_t)zp_ceil(zp_exp2(((float)++c->_increase_count) * c->_growth_base));
  assert(new_container._reserve > c->_reserve);
 		
 	new_container._max_size = c->_size + new_container._reserve;
@@ -59,10 +62,10 @@ zp_cold zp_noinline static int resize(zp_container *const zp_restrict c) {
  memcpy(new_container._to_id_lut, c->_to_id_lut, _helper_size);
  memcpy(new_container._to_index_lut, c->_to_index_lut, _helper_size);
 
- zp_container_id i = c->_max_size;
+ size_t i = c->_max_size;
  while(i < new_container._max_size) {
-  new_container._to_index_lut[i] = i;
-  new_container._free_list[i] = i;
+  new_container._to_index_lut[i]._val = i;
+  new_container._free_list[i]._val = i;
   i++;
  }
  zp_container_destroy(c);
@@ -117,13 +120,13 @@ zp_cold zp_noinline static int resize(zp_container *const zp_restrict c) {
  and the id can easily be reused by using free list
 */
 
-zp_cold int zp_container_init(zp_container *const zp_restrict c, const zp_container_id stride, const zp_container_id reserve, const float growth_base) {
+zp_cold int zp_container_init(zp_container *const zp_restrict c, const uint16_t stride, const size_t reserve, const float growth_base) {
  assert(reserve != 0);
  assert(stride != 0);
  
  /* not exact, but still it can grow in a decent way, and able to minimize the realloc */
  c->_growth_base = zp_log2(growth_base);
-	c->_increase_count = (zp_container_id)zp_ceil(zp_log2((float)growth_base) / c->_growth_base);
+	c->_increase_count = (size_t)zp_ceil(zp_log2((float)growth_base) / c->_growth_base);
 
 	c->_reserve = reserve;
 	c->_max_size = reserve;
@@ -152,10 +155,10 @@ zp_cold int zp_container_init(zp_container *const zp_restrict c, const zp_contai
  if(zp_unlikely(!c->_bytes))
   return -1;
   
- zp_container_id i = c->_size;
+ size_t i = c->_size;
  while(i < c->_max_size) {
-  c->_to_index_lut[i] = i;
-  c->_free_list[i] = i;
+  c->_to_index_lut[i]._val = i;
+  c->_free_list[i]._val = i;
   i++;
  }
  return 0;
@@ -176,7 +179,7 @@ zp_container_id zp_container_acquire(zp_container *const zp_restrict c) {
   if(resize(c))
    return ZP_CONTAINER_NULL_ID;
  zp_container_id allocated = c->_free_list[c->_size];
- c->_to_id_lut[c->_to_index_lut[allocated]] = allocated;
+ c->_to_id_lut[c->_to_index_lut[allocated._val]._val] = allocated;
  c->_size++;
  return allocated;
 }
@@ -186,17 +189,17 @@ zp_container_id zp_container_acquire(zp_container *const zp_restrict c) {
  and retrieve the id to the free list
 */
 void zp_container_release(zp_container *const zp_restrict c, const zp_container_id id) {
- assert(c->_to_index_lut[id] < c->_size);
+ assert(c->_to_index_lut[id._val]._val < c->_size);
  assert(c->_size != 0);
- assert(id != ZP_CONTAINER_NULL_ID);
+ assert(!zp_container_id_isnull(id));
  
- zp_container_id current_index = c->_to_index_lut[id];
- zp_container_id last_index = c->_size - 1;
+ size_t current_index = c->_to_index_lut[id._val]._val;
+ size_t last_index = c->_size - 1;
  zp_container_id last_id = c->_to_id_lut[last_index];
  
  if(last_index != current_index) {
   memcpy(c->_bytes + ((size_t)current_index * (size_t)c->_stride), c->_bytes + ((size_t)last_index * (size_t)c->_stride), c->_stride);
-  memswap(&c->_to_index_lut[id], &c->_to_index_lut[last_id], sizeof(zp_container_id));
+  memswap(&c->_to_index_lut[id._val], &c->_to_index_lut[last_id._val], sizeof(zp_container_id));
   memswap(&c->_to_id_lut[current_index], &c->_to_id_lut[last_index], sizeof(zp_container_id));
  }
  c->_free_list[last_index] = id;
@@ -205,7 +208,7 @@ void zp_container_release(zp_container *const zp_restrict c, const zp_container_
 
 
 zp_cold void zp_container_insertion_sort(zp_container *const zp_restrict c, int (*should_swap)(void*, void*)) {
- for(int i = 1; i < c->_size; i++) {
+ for(size_t i = 1; i < c->_size; i++) {
   int j = i;
   int jm1 = j - 1;
   void *j_data = c->_bytes + (j * c->_stride);
@@ -217,7 +220,7 @@ zp_cold void zp_container_insertion_sort(zp_container *const zp_restrict c, int 
    zp_container_id jm1_id = c->_to_id_lut[jm1];
    
    memswap(&c->_to_id_lut[j], &c->_to_id_lut[jm1], sizeof(zp_container_id));
-   memswap(&c->_to_index_lut[j_id], &c->_to_index_lut[jm1_id], sizeof(zp_container_id));
+   memswap(&c->_to_index_lut[j_id._val], &c->_to_index_lut[jm1_id._val], sizeof(zp_container_id));
    j--;
   }
  }

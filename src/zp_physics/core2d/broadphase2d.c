@@ -2,6 +2,7 @@
 #include "zp_physics/core2d/world2d.h"
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 
 
 zp_inline zp_aabb2d combine(const zp_aabb2d a, const zp_aabb2d b) {
@@ -23,11 +24,10 @@ zp_inline int overlaps(zp_aabb2d a, zp_aabb2d b) {
 }
 
 
-zp_inline float perimeter(zp_aabb2d a) {
+zp_inline float area(zp_aabb2d a) {
  float w = a._max.x - a._min.x;
  float h = a._max.y - a._min.y;
- float wh = w + h;
- return wh + wh;
+ return w * h;
 }
 
 
@@ -48,14 +48,30 @@ zp_inline zp_aabb2d expanded(zp_aabb2d a, float amount) {
 }
 
 zp_inline int is_leaf(zp_broadphase2d_node n) {
- return n._left == ZP_POOL_NULL_ID && n._right == ZP_POOL_NULL_ID;
+ return zp_pool_id_isnull(n._left) && zp_pool_id_isnull(n._right);
 }
 
-
+/*
+       • --> _root
+      / \
+     /   \
+    •      • ----> current_node
+   / \    / \
+  /   \  /   \
+ •     ••     •
+        |     |---> _right 
+        |
+        -------> _left
+ 
+ conbine left and right, and result would be their parent's aabb
+ repeat until they reach the root.
+ 
+ it process from current node, up to the root.
+*/
 zp_noinline static void refit_upwards(zp_broadphase2d *const bp, zp_pool_id n) {
- assert(n != ZP_POOL_NULL_ID);
+ assert(!zp_pool_id_isnull(n));
  zp_pool_id node = n;
- while(node != ZP_POOL_NULL_ID) {  
+ while(!zp_pool_id_isnull(node)) {  
   zp_broadphase2d_node *node_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, node);
   if(!is_leaf(*node_ptr)) {
    zp_broadphase2d_node *left = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, node_ptr->_left);
@@ -66,8 +82,10 @@ zp_noinline static void refit_upwards(zp_broadphase2d *const bp, zp_pool_id n) {
  }
 }
 
+
+
 zp_noinline static zp_pool_id find_best_sibling(zp_broadphase2d *const bp, zp_pool_id leaf_id) {
- assert(bp->_root != ZP_POOL_NULL_ID);
+ assert(!zp_pool_id_isnull(bp->_root));
  
  if(is_leaf(*((zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, bp->_root))))
   return bp->_root;
@@ -83,31 +101,31 @@ zp_noinline static zp_pool_id find_best_sibling(zp_broadphase2d *const bp, zp_po
 
   zp_aabb2d combined = combine(node->_aabb, leaf->_aabb);
 
-  float inheritance_cost = 2.0f * (perimeter(combined) - perimeter(node->_aabb));
+  float inheritance_cost = 2.0f * (area(combined) - area(node->_aabb));
 
   float cost1, cost2;
   if(is_leaf(*left)) {
    zp_aabb2d box = combine(leaf->_aabb, left->_aabb);
-   cost1 = perimeter(box) + inheritance_cost;
+   cost1 = area(box) + inheritance_cost;
   } else {
    zp_aabb2d box = combine(leaf->_aabb, left->_aabb);
 
-   float old_area = perimeter(left->_aabb);
-   float new_area = perimeter(box);
+   float old_area = area(left->_aabb);
+   float new_area = area(box);
    cost1 = (new_area - old_area) + inheritance_cost;
   }
   if(is_leaf(*right)) {
    zp_aabb2d box = combine(leaf->_aabb, right->_aabb);
-   cost2 = perimeter(box) + inheritance_cost;
+   cost2 = area(box) + inheritance_cost;
   } else {
    zp_aabb2d box = combine(leaf->_aabb, right->_aabb);
 
-   float old_area = perimeter(right->_aabb);
-   float new_area = perimeter(box);
+   float old_area = area(right->_aabb);
+   float new_area = area(box);
    cost2 = (new_area - old_area) + inheritance_cost;
   }
 
-  float cost = 2.0f * perimeter(combined);
+  float cost = 2.0f * area(combined);
   if(cost < cost1 && cost < cost2)
    break;
    
@@ -132,11 +150,10 @@ zp_noinline static zp_pool_id create_leaf(zp_broadphase2d *const bp, const zp_aa
 
 
 zp_noinline static void insert_leaf(zp_broadphase2d *const bp, const zp_pool_id leaf_id) {
- if(bp->_root == ZP_POOL_NULL_ID) {
+ if(zp_pool_id_isnull(bp->_root)) {
   bp->_root = leaf_id;
   return;
  }
-
 
  zp_pool_id new_parent = ZP_POOL_NULL_ID;
  zp_broadphase2d_node *new_parent_ptr = NULL;
@@ -156,7 +173,7 @@ zp_noinline static void insert_leaf(zp_broadphase2d *const bp, const zp_pool_id 
  
  zp_pool_id old_parent = sibling_ptr->_parent;
  zp_broadphase2d_node *old_parent_ptr = NULL;
- if(old_parent != ZP_POOL_NULL_ID) 
+ if(!zp_pool_id_isnull(old_parent)) 
   old_parent_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, old_parent);
 
 
@@ -168,10 +185,10 @@ zp_noinline static void insert_leaf(zp_broadphase2d *const bp, const zp_pool_id 
  sibling_ptr->_parent = new_parent;
  leaf->_parent = new_parent;
 
- if(old_parent == ZP_POOL_NULL_ID) {
+ if(zp_pool_id_isnull(old_parent)) {
   bp->_root = new_parent;
  } else {
-  if(old_parent_ptr->_left == sibling)
+  if(zp_pool_id_isequal(old_parent_ptr->_left, sibling))
    old_parent_ptr->_left = new_parent;
   else
    old_parent_ptr->_right = new_parent;
@@ -180,10 +197,10 @@ zp_noinline static void insert_leaf(zp_broadphase2d *const bp, const zp_pool_id 
 }
 
 /*
- disconnect only the leaf_id, so it can be reinsert again
+ disconnect only the leaf_id(no release, only its parent), so it can be reinsert again
 */
 zp_noinline static void remove_leaf(zp_broadphase2d *const bp, zp_pool_id leaf_id) {
- if(leaf_id == bp->_root) {
+ if(zp_pool_id_isequal(leaf_id, bp->_root)) {
   bp->_root = ZP_POOL_NULL_ID;
   return;
  }
@@ -191,23 +208,23 @@ zp_noinline static void remove_leaf(zp_broadphase2d *const bp, zp_pool_id leaf_i
  zp_pool_id parent = leaf->_parent;
  zp_broadphase2d_node *parent_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, parent);
  
- assert(parent_ptr->_left == leaf_id || parent_ptr->_right == leaf_id);
+ assert(zp_pool_id_isequal(parent_ptr->_left, leaf_id) || zp_pool_id_isequal(parent_ptr->_right, leaf_id));
 
  zp_pool_id grand_parent = parent_ptr->_parent;
  zp_broadphase2d_node *grand_parent_ptr = NULL;
- if(parent_ptr->_parent != ZP_POOL_NULL_ID)
+ if(!zp_pool_id_isnull(parent_ptr->_parent))
   grand_parent_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, grand_parent);
 
- zp_pool_id sibling = (parent_ptr->_left == leaf_id) ? parent_ptr->_right : parent_ptr->_left;
+ zp_pool_id sibling = zp_pool_id_isequal(parent_ptr->_left, leaf_id) ? parent_ptr->_right : parent_ptr->_left;
 
- if(parent_ptr->_parent == ZP_POOL_NULL_ID) {
+ if(zp_pool_id_isnull(parent_ptr->_parent)) {
   bp->_root = sibling;
   zp_broadphase2d_node *sibling_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, sibling);
   sibling_ptr->_parent = ZP_POOL_NULL_ID;
  } else {
   zp_broadphase2d_node *sibling_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, sibling);
 
-  if(grand_parent_ptr->_left == parent)
+  if(zp_pool_id_isequal(grand_parent_ptr->_left, parent))
    grand_parent_ptr->_left = sibling;
   else
    grand_parent_ptr->_right = sibling;
@@ -219,7 +236,7 @@ zp_noinline static void remove_leaf(zp_broadphase2d *const bp, zp_pool_id leaf_i
 
 
 zp_noinline static void traverse_pair_recursive(zp_broadphase2d *const bp, zp_pool_id a_id, zp_pool_id b_id, void (*func)(zp_container_id, zp_container_id, void *), void *ptr, uint32_t depth, zp_broadphase2d_treetranversalinfo *info) {
- if(a_id == ZP_POOL_NULL_ID || b_id == ZP_POOL_NULL_ID)
+ if(zp_pool_id_isnull(a_id) || zp_pool_id_isnull(b_id))
   return;
 
  zp_broadphase2d_node *a = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, a_id);
@@ -235,7 +252,7 @@ zp_noinline static void traverse_pair_recursive(zp_broadphase2d *const bp, zp_po
  info->_max_depth = info->_max_depth < depth ? depth : info->_max_depth;
 
  if(a_leaf && b_leaf) {
-  if(a_id != b_id) {
+  if(zp_pool_id_notequal(a_id, b_id)) {
    info->_pair_test++;
    func(a->_body, b->_body, ptr);
   }
@@ -259,7 +276,7 @@ zp_noinline static void traverse_pair_recursive(zp_broadphase2d *const bp, zp_po
 
 
 zp_noinline static void traverse_self_recursive(zp_broadphase2d *const bp, zp_pool_id n_id, void (*func)(zp_container_id, zp_container_id, void *), void *ptr, uint32_t depth, zp_broadphase2d_treetranversalinfo *info) {
- if(n_id == ZP_POOL_NULL_ID)
+ if(zp_pool_id_isnull(n_id))
   return;
 
  zp_broadphase2d_node *n = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, n_id);
@@ -276,7 +293,7 @@ zp_noinline static void traverse_self_recursive(zp_broadphase2d *const bp, zp_po
 
 
 zp_noinline static void traverse_delete_non_leaf(zp_broadphase2d *const bp, zp_pool_id n) {
- if(n == ZP_POOL_NULL_ID) {
+ if(zp_pool_id_isnull(n)) {
    return;
  }
  zp_broadphase2d_node *node = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, n);
@@ -291,6 +308,98 @@ zp_noinline static void traverse_delete_non_leaf(zp_broadphase2d *const bp, zp_p
 
 
 
+/*
+ Top down median split O(n log(n))
+ not nearly as optimal, bit still balance and fast overall
+*/
+static size_t zp_partition_median(zp_broadphase2d *bp, zp_pool_id *leafs, size_t count, int axis) {
+ 
+ size_t mid = count >> 1;
+ size_t i = 0, j = count - 1;
+ 
+ zp_broadphase2d_node *pivot_node = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, leafs[mid]);
+ float pivot_val = (axis == 0) ? (pivot_node->_aabb._min.x + pivot_node->_aabb._max.x) * 0.5f  : (pivot_node->_aabb._min.y + pivot_node->_aabb._max.y) * 0.5f;
+
+ while(i <= j) {
+  while(1) {
+   zp_broadphase2d_node *node = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, leafs[i]);
+   float val = (axis == 0)  ? (node->_aabb._min.x + node->_aabb._max.x) * 0.5f  : (node->_aabb._min.y + node->_aabb._max.y) * 0.5f;
+   if(val >= pivot_val)
+    break;
+   i++;
+ }
+ while(1) {
+  zp_broadphase2d_node *node = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, leafs[j]);
+  float val = (axis == 0) ? (node->_aabb._min.x + node->_aabb._max.x) * 0.5f  : (node->_aabb._min.y + node->_aabb._max.y) * 0.5f;
+  if(val <= pivot_val || j == 0)
+   break;
+  j--;
+ }
+ if(i <= j) {
+  zp_pool_id tmp = leafs[i];
+  leafs[i] = leafs[j];
+  leafs[j] = tmp;
+  i++;
+  if(j > 0) j--;
+  }
+ }
+ size_t count_half = count >> 1;
+ return (i > count_half) ? count_half : i;
+}
+
+
+
+static zp_pool_id build_top_down_recursive(zp_broadphase2d *bp, zp_pool_id *leafs, size_t count) {
+ if(count == 0) return ZP_POOL_NULL_ID;
+ if(count == 1) return leafs[0];
+ 
+ zp_aabb2d centroid_bounds;
+ centroid_bounds._min.x = zp_inf();
+ centroid_bounds._min.y = zp_inf();
+ centroid_bounds._max.x = -zp_inf();
+ centroid_bounds._max.y = -zp_inf();
+ 
+ for(size_t i = 0; i < count; ++i) {
+  zp_broadphase2d_node *leaf = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, leafs[i]);
+  float cx = (leaf->_aabb._min.x + leaf->_aabb._max.x) * 0.5f;
+  float cy = (leaf->_aabb._min.y + leaf->_aabb._max.y) * 0.5f;
+
+  centroid_bounds._min.x = zp_min(centroid_bounds._min.x, cx);
+  centroid_bounds._min.y = zp_min(centroid_bounds._min.y, cy);
+  centroid_bounds._max.x = zp_max(centroid_bounds._max.x, cx);
+  centroid_bounds._max.y = zp_max(centroid_bounds._max.y, cy);
+ }
+
+
+ float extent_x = centroid_bounds._max.x - centroid_bounds._min.x;
+ float extent_y = centroid_bounds._max.y - centroid_bounds._min.y;
+
+ int axis = (extent_x > extent_y) ? 0 : 1;
+ size_t mid = zp_partition_median(bp, leafs, count, axis);
+ if (mid == 0 || mid == count) mid = count / 2; // Fallback for identical centroid values
+
+ zp_pool_id parent_id = zp_pool_acquire(&bp->_node_allocator);
+ zp_broadphase2d_node *parent = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, parent_id);
+ parent->_id = parent_id;
+ parent->_parent = ZP_POOL_NULL_ID;
+    
+ zp_pool_id left_id  = build_top_down_recursive(bp, leafs, mid);
+ zp_pool_id right_id = build_top_down_recursive(bp, leafs + mid, count - mid);
+
+ parent = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, parent_id);
+ parent->_left = left_id;
+ parent->_right = right_id;
+
+ zp_broadphase2d_node *left_node  = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, left_id);
+ zp_broadphase2d_node *right_node = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, right_id);
+
+ left_node->_parent = parent_id;
+ right_node->_parent = parent_id;
+ parent->_aabb = combine(left_node->_aabb, right_node->_aabb);
+ return parent_id;
+}
+
+
 
 
 
@@ -298,10 +407,10 @@ zp_noinline static void traverse_delete_non_leaf(zp_broadphase2d *const bp, zp_p
 
     
 
-int zp_broadphase2d_init(zp_broadphase2d *zp_restrict const bp, const float growth_base, float aabb_margin) {
+int zp_broadphase2d_init(zp_broadphase2d *zp_restrict const bp, const float growth_base, float aabb_margin, const size_t stack_initial_size) {
  if(zp_unlikely(zp_pool_init(&bp->_node_allocator, sizeof(zp_broadphase2d_node), 16, growth_base)))
   return -1;
- if(zp_unlikely(zp_bump_init(&bp->_stack, 32)))
+ if(zp_unlikely(zp_bump_init(&bp->_stack, stack_initial_size, growth_base)))
   return -1;
  bp->_root = ZP_POOL_NULL_ID;
  bp->_aabb_margin = aabb_margin;
@@ -330,7 +439,7 @@ void zp_broadphase2d_update_element(zp_broadphase2d *zp_restrict const bp, const
 
 
 zp_pool_id zp_broadphase2d_insert_element(zp_broadphase2d *zp_restrict const bp, const zp_aabb2d fit, const zp_container_id body_id) {
- zp_pool_id new_leaf = create_leaf(bp, expanded(fit, 2.0f), body_id);
+ zp_pool_id new_leaf = create_leaf(bp, expanded(fit, bp->_aabb_margin), body_id);
  insert_leaf(bp, new_leaf);
  bp->_leaf_size++;
  return new_leaf;
@@ -349,13 +458,13 @@ void zp_broadphase2d_traverse_pairs(zp_broadphase2d *zp_restrict const bp, void 
  memset(&tree_info, 0, sizeof(zp_broadphase2d_treetranversalinfo));
  traverse_self_recursive(bp, bp->_root, func, ptr, 0, &tree_info);
 
- float tolerance_factor = 2.5f;
+ float tolerance_factor = 1.5f;
  float log_n = zp_log2((float)bp->_leaf_size);
  uint32_t max_depth = zp_round(tolerance_factor * log_n);
  
  int ca = tree_info._max_depth > max_depth;
- int cb = tree_info._node_visits > (bp->_leaf_size * 20u);
- int cc = tree_info._pair_test > (bp->_leaf_size * 40u);
+ int cb = tree_info._node_visits > (bp->_leaf_size * 8u);
+ int cc = tree_info._pair_test > (bp->_leaf_size * 20u);
 
  if(ca && cb && cc)
   bp->_frame_tolerance++;
@@ -365,7 +474,11 @@ void zp_broadphase2d_traverse_pairs(zp_broadphase2d *zp_restrict const bp, void 
 
 
 
-void zp_broadphase2d_optimize_tree(zp_broadphase2d *zp_restrict const bp, void *zp_restrict w) {
+/*
+ Greedy bottom up rebuild. O(n ^ 3)
+ can optimize the tree up to nearly 100% efficiency
+*/
+void zp_broadphase2d_greedy_rebuild_tree(zp_broadphase2d *zp_restrict const bp, void *zp_restrict w) {
  /* recursive delete */
  traverse_delete_non_leaf(bp, bp->_root);
  bp->_root = ZP_POOL_NULL_ID;
@@ -384,6 +497,8 @@ void zp_broadphase2d_optimize_tree(zp_broadphase2d *zp_restrict const bp, void *
   leafs[i] = bodies[i]._head._aabb_node;
  }
  
+ zp_compiler_memory_barrier();
+ 
  size_t count = body_size;
  while (count > 1) {
 
@@ -394,12 +509,15 @@ void zp_broadphase2d_optimize_tree(zp_broadphase2d *zp_restrict const bp, void *
   int min_i = -1;
   int min_j = -1;
 
+  /* 
+   bruite force and find the minimum possible cost
+  */
   for(size_t i = 0; i < count; ++i) {
    zp_broadphase2d_node *a = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, leafs[i]);
    for(size_t j = i + 1; j < count; ++j) {
     zp_broadphase2d_node *b = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, leafs[j]);
     zp_aabb2d combined = combine(a->_aabb, b->_aabb);
-    float cost = perimeter(combined);
+    float cost = area(combined);
     if(cost < min_cost) {
      min_cost = cost;
      min_i = i;
@@ -429,6 +547,33 @@ void zp_broadphase2d_optimize_tree(zp_broadphase2d *zp_restrict const bp, void *
  bp->_root = leafs[0];
  zp_bump_reset(&bp->_stack, 0);
 }
+
+
+
+
+void zp_broadphase2d_optimize_tree(zp_broadphase2d *zp_restrict const bp, void *zp_restrict w) {
+ traverse_delete_non_leaf(bp, bp->_root);
+ bp->_root = ZP_POOL_NULL_ID;
+ 
+ zp_world2d *const world = (zp_world2d *)w;
+ zp_body2d *bodies = (zp_body2d *)world->_body_container._bytes;
+ const size_t body_size = (size_t)world->_body_container._size;
+
+ if(body_size == 0) return;
+
+ size_t offset = zp_bump_acquire(&bp->_stack, sizeof(zp_pool_id) * body_size, ZP_MEMORY_ALIGNMENT);
+ zp_pool_id *leafs = zp_bump_get(&bp->_stack, offset);
+    
+ for(size_t i = 0; i < body_size; i++) {
+  leafs[i] = bodies[i]._head._aabb_node;
+ }
+ 
+ zp_compiler_memory_barrier();
+ 
+ bp->_root = build_top_down_recursive(bp, leafs, body_size);
+ zp_bump_reset(&bp->_stack, 0);
+}
+
 
 
 int zp_broadphase2d_should_rebuild(zp_broadphase2d *zp_restrict const bp, uint8_t frame_tolerance) {
