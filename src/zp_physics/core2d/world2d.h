@@ -29,6 +29,8 @@ struct zp_world2d {
   
  uint8_t          _sort_body;
  uint8_t          _broadphase_frame_tolerance;
+
+ uint8_t          _dt_limit;
 };
 
 #endif

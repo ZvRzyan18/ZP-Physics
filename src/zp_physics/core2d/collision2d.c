@@ -25,10 +25,11 @@ uint8_t zp_collision2d_collide(zp_manifold2d *const zp_restrict out, const zp_bo
  
  const zp_aabb2d ba = a->_head._fit_aabb;
  const zp_aabb2d bb = b->_head._fit_aabb;
- /* aabb checks */
+ /* 
+  fit aabb checks, broadphase only checks for fat aabb 
+ */
  if((ba._max.x < bb._min.x || ba._min.x > bb._max.x || ba._max.y < bb._min.y || ba._min.y > bb._max.y))
   return 0;
  return function_luts[a->_head._flags & ZP_BODY_MASK_2D][b->_head._flags & ZP_BODY_MASK_2D](out, a, b);
-
 }
 

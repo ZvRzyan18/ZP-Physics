@@ -27,7 +27,7 @@
 #define zp_pure __attribute__((pure))
 #define zp_hot __attribute__((hot))
 #define zp_cold __attribute__((cold))
-
+#define zp_prefetch(v) __builtin_prefetch(v, 1, 3)
 #define zp_compiler_memory_barrier() __asm__ volatile("" ::: "memory");
 
 #elif defined(_MSC_VER)
@@ -43,7 +43,7 @@
 #define zp_pure
 #define zp_hot 
 #define zp_cold 
-
+#define zp_prefetch(v)
 #define zp_compiler_memory_barrier() _ReadWriteBarrier()
 
 #else

@@ -46,11 +46,17 @@ zp_hot zp_inline void update_aabb(zp_body2d *const zp_restrict body) {
 
 
 zp_hot void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt) {
+/*
+ if(zp_body2d_asleep(body))
+  return;
+ */
  const zp_world2d *const ctx = (zp_world2d*)world;
  const zp_vec2 dt_vec = zp_stv2(dt);
  const zp_vec2 inv_mass = zp_stv2(body->_head._inv_mass);
  
- zp_vec2 linear_acceleration = zp_fma2(body->_head._force, inv_mass, ctx->_gravity);
+ zp_vec2 linear_acceleration;
+ linear_acceleration = zp_fma2(body->_head._force, inv_mass, ctx->_gravity);
+ 
  body->_head._velocity = zp_fma2(linear_acceleration, dt_vec, body->_head._velocity);
 
  float angular_acceleration = body->_head._torque * body->_head._inv_inertia;
@@ -64,6 +70,31 @@ zp_hot void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *con
 
 zp_hot void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt) {
  (void)world;
+/*
+ if(zp_body2d_asleep(body))
+  return;
+*/
+	if(body->_head._flags & ZP_BODY_IS_SLEEP_2D) {
+	 if(body->_head._idle_time > 1.37f) {
+	  body->_head._idle_time = zp_nan();
+	  return;
+	 }
+	 body->_head._idle_time += dt;
+	}
+
+ float la = zp_dot2(body->_head._velocity, body->_head._velocity);
+ float oa = zp_abs(body->_head._omega);
+
+ const float vt =  2.2f;
+ const float ot =  0.8f;
+ if(la < vt && oa < ot && !(body->_head._flags & ZP_BODY_IS_SLEEP_2D)) {
+  body->_head._idle_time += dt;
+  if(body->_head._idle_time > 3.97f) {
+   body->_head._idle_time = 0.0f;
+   body->_head._flags |= ZP_BODY_IS_SLEEP_2D;
+   return;
+  }
+ }
 
  zp_vec2 dt_vec = zp_stv2(dt);
 
@@ -72,40 +103,50 @@ zp_hot void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *con
  body->_head._velocity.x *= ld;
  body->_head._velocity.y *= ld;
  body->_head._omega *= ad;
- 
+
+
  const float o_epsilon = 0.01f;
  const float v_epsilon = 0.1f;
  
  float dt_a = zp_dot2(body->_head._velocity, body->_head._velocity);
- 
+
  uint8_t update_rotation = zp_abs(body->_head._omega) > o_epsilon;
  uint8_t update_position = dt_a > v_epsilon;
  if(update_rotation) {
   float omega = body->_head._omega * dt;
- 
   zp_complex omega_complex;
-  if(zp_abs(omega) < 0.06f) {
    zp_set_real(&omega_complex, 1.0f - 0.5f * omega * omega);
    zp_set_imag(&omega_complex, omega);
-  } else {
+  /*
+  // zp_abs(omega) < 0.06f
    float sine, cosine;
    zp_sincos(omega, &sine, &cosine);
    zp_set_real(&omega_complex, cosine);
    zp_set_imag(&omega_complex, sine);
-  }
+  */
   body->_head._rotation = zp_cmul(omega_complex, body->_head._rotation);
   body->_head._rotation = zp_cunit(body->_head._rotation);
  }
   
 
- if(update_position) {
+ if(update_position)
   body->_head._position = zp_fma2(body->_head._velocity, dt_vec, body->_head._position);   
- }
+ 
  if(update_rotation || update_position)
   update_aabb(body);
 }
 
 
+zp_hot int zp_body2d_asleep(zp_body2d *const zp_restrict body) {
+ return (body->_head._flags & ZP_BODY_IS_SLEEP_2D) && (body->_head._idle_time != body->_head._idle_time);
+}
+
+zp_hot void zp_body2d_awake(zp_body2d *const zp_restrict body) {
+ if(!(body->_head._flags & ZP_BODY_IS_SLEEP_2D))
+  return;
+ body->_head._flags &= ~ZP_BODY_IS_SLEEP_2D;
+ body->_head._idle_time = 0.0f;
+}
 
 /*
  statics

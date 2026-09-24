@@ -13,7 +13,7 @@
 #define ZP_BODY_IS_SLEEP_2D           0b0001000000000000
 #define ZP_BODY_LOCK_POS_X_2D         0b0000100000000000
 #define ZP_BODY_LOCK_POS_Y_2D         0b0000010000000000
-#define ZP_BODY_LOCK_ROT_2D           0b0000000100000000
+#define ZP_BODY_LOCK_ROT_2D           0b0000001000000000
 
 #define ZP_BODY_MASK_2D               0b0000000000111111
 #define ZP_BODY_BOX_2D                0b0000000000000001
@@ -24,9 +24,13 @@
 #define ZP_JOINT_FIXED_2D             0b0000000000000010
 
 /* external handle states. */
-#define ZP_HANDLE_FLAG_IS_BODY        0b00000001
-#define ZP_HANDLE_FLAG_IS_JOINT       0b00000010
-#define ZP_HANDLE_FLAG_IS_SENSOR      0b00000011
+#define ZP_HANDLE_FLAG_IS_BODY_2D     0b00000001
+#define ZP_HANDLE_FLAG_IS_JOINT_2D    0b00000010
+#define ZP_HANDLE_FLAG_IS_SENSOR_2D   0b00000011
+
+#define ZP_WORLD_DT_LIMIT_CLAMP_2D     1
+#define ZP_WORLD_DT_LIMIT_ADAPTIVE_2D  2
+#define ZP_WORLD_DT_LIMIT_NONE_2D      3
 
 
 /*
@@ -56,6 +60,7 @@ typedef struct {
  
  
  zp_vec2  _gravity;
+ uint8_t  _dt_limit;
  uint8_t  _solver_substeps;
  uint8_t  _time_substeps;
 } zp_create_world2d;
@@ -101,6 +106,7 @@ void zp_world2d_remove_body(zp_world2d *const zp_restrict world, const zp_handle
 zp_hot void zp_world2d_get_bodydata(zp_world2d *const zp_restrict world, const zp_handle id, zp_bodydata2d *const zp_restrict dat);
 zp_cold void zp_world2d_greedy_rebuild_tree(zp_world2d *const zp_restrict world);
 zp_cold void zp_world2d_optimize_rebuild_tree(zp_world2d *const zp_restrict world);
+zp_cold void zp_world2d_optimize_body_container(zp_world2d *const zp_restrict world);
 
 #ifdef __cplusplus
 }

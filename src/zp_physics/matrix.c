@@ -93,6 +93,16 @@ zp_mat4x4 zp_fromquaternion4(const zp_vec4 a) {
 }
 
 
+/*
+ see @complex.c
+ 
+ the idea is based on the Euler's formula 
+
+ e ^ i*θ = cos(θ) + i sin(θ)
+ 
+ e = euler's number (≈2.71828)
+ i = imaginary (√-1 or (complex){0, 1})
+*/
 
 zp_mat3x3 zp_mat3x3_transform(const zp_complex rotation, const zp_vec2 position) {
  zp_mat3x3 out;

@@ -80,7 +80,11 @@ zp_inline zp_complex zp_cabs(zp_complex c) {
 #endif
 }
 
-
+/*
+ mist be called after multiplication to correct
+ the small floating point error, because the body
+ continously accumulates an error.
+*/
 zp_inline zp_complex zp_cunit(zp_complex c) {
 #ifdef zp_has_complex_extension
  return zp_as_complex2(zp_unit2(zp_as_vector2(c)));
@@ -109,10 +113,18 @@ zp_const zp_inline zp_complex zp_cconj(const zp_complex a) {
  out.y = -zp_cimag(a);
  return out;
 #endif
-} 
+}
+
 
 zp_complex zp_crotate(const float radians);
+
 float zp_cangle(const zp_complex c);
+
+
+
+
+
+
 
 
 
