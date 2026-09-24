@@ -12,7 +12,10 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
 
  zp_body2d *const body_a = (zp_body2d*)zp_container_get(&world->_body_container, m->_body_a);
  zp_body2d *const body_b = (zp_body2d*)zp_container_get(&world->_body_container, m->_body_b);
-
+/*
+ if(zp_body2d_asleep(body_a) && zp_body2d_asleep(body_b))
+  return;
+  */
  zp_compiler_memory_barrier();
 
  zp_vec2 a_pos = body_a->_head._position;
@@ -21,6 +24,7 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
  float a_inv_mass = body_a->_head._inv_mass;
  float a_inv_inertia = body_a->_head._inv_inertia;
  float a_restitution = body_a->_head._restitution;
+ float a_omega = body_a->_head._omega;
 
  zp_compiler_memory_barrier();
 
@@ -30,12 +34,15 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
  float b_inv_mass = body_b->_head._inv_mass;
  float b_inv_inertia = body_b->_head._inv_inertia;
  float b_restitution = body_b->_head._restitution;
+ float b_omega = body_b->_head._omega;
+
 
 
  (void)input;
 
  float inv_mass = a_inv_mass + b_inv_mass;
  float e = zp_min(a_restitution, b_restitution);
+
 
  for(uint8_t i = 0; i < m->_contact_count; i++) {
  	zp_contact2d *const contact = m->_contacts + i;
@@ -102,6 +109,22 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
   float x = impact_speed * 0.2f;
   contact->_bias = (impact_speed * e) * zp_tanh(zp_min(x, 0.0f));
  }
+
+
+ float la = zp_dot2(a_velocity, a_velocity);
+ float lb = zp_dot2(b_velocity, b_velocity);
+ float oa = zp_abs(a_omega);
+ float ob = zp_abs(b_omega);
+
+ {
+ const float vt =  1.2f;
+ const float ot =  0.4f;
+ if(la > vt || oa > ot)
+  zp_body2d_awake(body_a);
+ if(lb > vt || ob > ot)
+  zp_body2d_awake(body_b);
+ }
+
 }
 
 
@@ -110,10 +133,13 @@ void zp_manifold2d_soft_presolve_contact(zp_manifold2d *const zp_restrict m, voi
  (void)input;
  
  zp_world2d *const world = (zp_world2d*)w;
- 
+
  zp_body2d *const body_a = (zp_body2d*)zp_container_get(&world->_body_container, m->_body_a);
  zp_body2d *const body_b = (zp_body2d*)zp_container_get(&world->_body_container, m->_body_b);
-
+/*
+ if(zp_body2d_asleep(body_a) && zp_body2d_asleep(body_b))
+  return;
+*/
  zp_compiler_memory_barrier();
 
  zp_vec2 a_velocity = body_a->_head._velocity;
@@ -159,7 +185,10 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
  
  zp_body2d *const body_a = (zp_body2d*)zp_container_get(&world->_body_container, m->_body_a);
  zp_body2d *const body_b = (zp_body2d*)zp_container_get(&world->_body_container, m->_body_b);
-
+/*
+ if(zp_body2d_asleep(body_a) && zp_body2d_asleep(body_b))
+  return;
+*/
  zp_compiler_memory_barrier();
 
  zp_vec2 a_velocity = body_a->_head._velocity;
@@ -192,7 +221,7 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
   r1 = contact->_updated_r1;
   r2 = contact->_updated_r2;
   depth = contact->_updated_depth;
-
+  
 	 va = zp_add2(a_velocity, zp_cross_sv2(a_omega, r1));
   vb = zp_add2(b_velocity, zp_cross_sv2(b_omega, r2));
 	 relative_vel = zp_sub2(vb, va);
@@ -270,6 +299,7 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
 	 b_velocity = zp_add2(b_velocity, zp_mul2(zp_stv2(b_inv_mass), impulse));
 	 b_omega += b_inv_inertia * zp_cross2(r2, impulse);
  }
+  
  body_a->_head._velocity = a_velocity;
  body_a->_head._omega = a_omega;
 
@@ -288,7 +318,10 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
  
  zp_body2d *const body_a = (zp_body2d*)zp_container_get(&world->_body_container, m->_body_a);
  zp_body2d *const body_b = (zp_body2d*)zp_container_get(&world->_body_container, m->_body_b);
-
+/*
+ if(zp_body2d_asleep(body_a) && zp_body2d_asleep(body_b))
+  return;
+*/
  zp_compiler_memory_barrier();
 
  zp_vec2 a_velocity = body_a->_head._velocity;
@@ -327,8 +360,6 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
 	 relative_vel = zp_sub2(vb, va);
 
 		float vn = zp_dot2(relative_vel, contact->_normal);
-
-
 
 
   float slop = 0.04f;
@@ -382,6 +413,21 @@ void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *con
 	 b_velocity = zp_add2(b_velocity, zp_mul2(zp_stv2(b_inv_mass), impulse));
 	 b_omega += b_inv_inertia * zp_cross2(r2, impulse);
  }
+ 
+ float la = zp_dot2(a_velocity, a_velocity);
+ float lb = zp_dot2(b_velocity, b_velocity);
+ float oa = zp_abs(a_omega);
+ float ob = zp_abs(b_omega);
+
+ {
+ const float vt =  2.2f;
+ const float ot =  0.8f;
+ if(la > vt || oa > ot)
+  zp_body2d_awake(body_a);
+ if(lb > vt || ob > ot)
+  zp_body2d_awake(body_b);
+ }
+
 
  body_a->_head._velocity = a_velocity;
  body_a->_head._omega = a_omega;

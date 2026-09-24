@@ -50,6 +50,7 @@ typedef struct {
  zp_container_id _body_b;
  
  uint8_t         _contact_count;
+ uint8_t         _queried;
 } zp_manifold2d;
 
 

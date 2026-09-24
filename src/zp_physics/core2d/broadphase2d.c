@@ -5,6 +5,11 @@
 #include <stdlib.h>
 
 
+/**********************************************
+*               AABB OPERATION                *
+***********************************************/
+
+
 zp_inline zp_aabb2d combine(const zp_aabb2d a, const zp_aabb2d b) {
  zp_aabb2d out;
  out._min.x = zp_min(a._min.x, b._min.x);
@@ -47,9 +52,17 @@ zp_inline zp_aabb2d expanded(zp_aabb2d a, float amount) {
  return out;
 }
 
+
+/**********************************************
+*                   BVH TREE                  *
+***********************************************/
+
+
+
 zp_inline int is_leaf(zp_broadphase2d_node n) {
  return zp_pool_id_isnull(n._left) && zp_pool_id_isnull(n._right);
 }
+
 
 /*
        • --> _root
@@ -84,25 +97,41 @@ zp_noinline static void refit_upwards(zp_broadphase2d *const bp, zp_pool_id n) {
 
 
 
+/*
+       • --> _root
+      / \
+     /   \
+    •      • --> calculate cost of left and right of every node
+   / \    / \    then compare, and always to go to the lowest cost
+  /   \  /   \   to make it at least balanced
+ •     ••     • 
+              |----> leaf node
+
+ starts from the root and travel all the way down the leaf with minimum
+ possible cost.
+ 
+ • if you find the leaf with minimum cost, that would be the best sibling
+ 
+ • the cost means smaller aabb result when you refit it upwards.
+ • for farther object, it would result in a larger aabb(higher cost).
+*/
+
 zp_noinline static zp_pool_id find_best_sibling(zp_broadphase2d *const bp, zp_pool_id leaf_id) {
  assert(!zp_pool_id_isnull(bp->_root));
- 
- if(is_leaf(*((zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, bp->_root))))
-  return bp->_root;
- 
+  
  zp_broadphase2d_node *leaf = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, leaf_id);
- zp_broadphase2d_node *current_data;
  zp_pool_id current = bp->_root;
- do {
-  zp_broadphase2d_node *node = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, current);
+ zp_broadphase2d_node *current_data = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, current);
+
+ while(!is_leaf(*current_data)) {
+  zp_broadphase2d_node *node = current_data;
 
   zp_broadphase2d_node *left = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, node->_left);
   zp_broadphase2d_node *right = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, node->_right);
 
   zp_aabb2d combined = combine(node->_aabb, leaf->_aabb);
 
-  float inheritance_cost = 2.0f * (area(combined) - area(node->_aabb));
-
+  float inheritance_cost = (area(combined) - area(node->_aabb));
   float cost1, cost2;
   if(is_leaf(*left)) {
    zp_aabb2d box = combine(leaf->_aabb, left->_aabb);
@@ -124,18 +153,21 @@ zp_noinline static zp_pool_id find_best_sibling(zp_broadphase2d *const bp, zp_po
    float new_area = area(box);
    cost2 = (new_area - old_area) + inheritance_cost;
   }
-
-  float cost = 2.0f * area(combined);
-  if(cost < cost1 && cost < cost2)
-   break;
-   
-   current_data = (cost1 < cost2) ? left : right;
-   current = current_data->_id;
-  } while(!is_leaf(*current_data));
+    
+  if(cost1 < cost2) {
+   current_data = left;
+  } else {
+   current_data = right;
+  }
+  current = current_data->_id;
+ }
  return current;
 }
 
 
+/*
+ create an empty leaf node
+*/
 zp_noinline static zp_pool_id create_leaf(zp_broadphase2d *const bp, const zp_aabb2d aabb, const zp_container_id body_id) {
  zp_pool_id leaf_id = zp_pool_acquire(&bp->_node_allocator);
  zp_broadphase2d_node *leaf = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, leaf_id);
@@ -148,6 +180,33 @@ zp_noinline static zp_pool_id create_leaf(zp_broadphase2d *const bp, const zp_aa
  return leaf_id;
 }
 
+/*
+       • --> _root
+      / \
+     /   \
+    •      • 
+   / \    / \ 
+  /   \  /   \ 
+ •     ••     • 
+              |----> (lets say) best sibling (always leaf)
+
+ then the inserted leaf will become like this.
+
+       • --> _root
+      / \
+     /   \
+    •      • 
+   / \    / \ 
+  /   \  /   \ 
+ •     ••     • --> newly alloated parent (non-leaf)
+             / \
+            /   \
+           •     • ----> inserted leaf
+           |
+           |------->  best sibling
+           
+ after that, it has to refit upwards up to the root. 
+*/
 
 zp_noinline static void insert_leaf(zp_broadphase2d *const bp, const zp_pool_id leaf_id) {
  if(zp_pool_id_isnull(bp->_root)) {
@@ -166,17 +225,24 @@ zp_noinline static void insert_leaf(zp_broadphase2d *const bp, const zp_pool_id 
   new_parent_ptr->_id = new_parent;
  }
 
-
+ /*
+  find the best sibling and place the new leaf besides that 
+  best sibling
+ */
  zp_broadphase2d_node *leaf = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, leaf_id);
  zp_pool_id sibling = find_best_sibling(bp, leaf_id);
  zp_broadphase2d_node *sibling_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, sibling);
  
  zp_pool_id old_parent = sibling_ptr->_parent;
  zp_broadphase2d_node *old_parent_ptr = NULL;
- if(!zp_pool_id_isnull(old_parent)) 
+ 
+ int old_parent_valid = !zp_pool_id_isnull(old_parent);
+ if(old_parent_valid) 
   old_parent_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, old_parent);
 
-
+ /*
+  reconnect the nodes, to make it valid id
+ */
  new_parent_ptr->_parent = old_parent;
 
  new_parent_ptr->_left = sibling;
@@ -185,19 +251,51 @@ zp_noinline static void insert_leaf(zp_broadphase2d *const bp, const zp_pool_id 
  sibling_ptr->_parent = new_parent;
  leaf->_parent = new_parent;
 
- if(zp_pool_id_isnull(old_parent)) {
-  bp->_root = new_parent;
- } else {
+ if(old_parent_valid) {
   if(zp_pool_id_isequal(old_parent_ptr->_left, sibling))
    old_parent_ptr->_left = new_parent;
   else
    old_parent_ptr->_right = new_parent;
+ } else {
+  bp->_root = new_parent;
  }
  refit_upwards(bp, new_parent);
 }
 
 /*
  disconnect only the leaf_id(no release, only its parent), so it can be reinsert again
+
+       • --> grand parent
+      / \
+     /   \
+    •      •  -> parent
+   / \    / \ 
+  /   \  /   \ 
+ •     ••     • 
+              |----> (lets say) leaf that you want to remove
+
+ next step
+       • --> grand parent
+      / \
+     /   \
+    •      •  --> release the parent's memory
+   / \    / \ 
+  /   \  /   \ 
+ •     ••     • 
+        |     |----> (lets say) leaf that you want to remove
+        |
+        |------> connect the sibling to the grand parent's child
+
+       • --> grand parent
+      / \
+     /   \
+    •     •  --> previous sibling
+   / \ 
+  /   \
+ •     •
+
+ after the remove, it has to be refited upwards
+ to update the aabb size.
 */
 zp_noinline static void remove_leaf(zp_broadphase2d *const bp, zp_pool_id leaf_id) {
  if(zp_pool_id_isequal(leaf_id, bp->_root)) {
@@ -212,30 +310,59 @@ zp_noinline static void remove_leaf(zp_broadphase2d *const bp, zp_pool_id leaf_i
 
  zp_pool_id grand_parent = parent_ptr->_parent;
  zp_broadphase2d_node *grand_parent_ptr = NULL;
- if(!zp_pool_id_isnull(parent_ptr->_parent))
+ int grand_parent_valid = !zp_pool_id_isnull(parent_ptr->_parent);
+
+ if(grand_parent_valid)
   grand_parent_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, grand_parent);
 
  zp_pool_id sibling = zp_pool_id_isequal(parent_ptr->_left, leaf_id) ? parent_ptr->_right : parent_ptr->_left;
 
- if(zp_pool_id_isnull(parent_ptr->_parent)) {
-  bp->_root = sibling;
-  zp_broadphase2d_node *sibling_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, sibling);
-  sibling_ptr->_parent = ZP_POOL_NULL_ID;
- } else {
+ if(grand_parent_valid) {
   zp_broadphase2d_node *sibling_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, sibling);
 
   if(zp_pool_id_isequal(grand_parent_ptr->_left, parent))
    grand_parent_ptr->_left = sibling;
   else
    grand_parent_ptr->_right = sibling;
-   sibling_ptr->_parent = grand_parent;
-   refit_upwards(bp, grand_parent);
-  }
+  sibling_ptr->_parent = grand_parent;
+  refit_upwards(bp, grand_parent);
+ } else {
+  /* the grandparent is root */
+  bp->_root = sibling;
+  zp_broadphase2d_node *sibling_ptr = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, sibling);
+  sibling_ptr->_parent = ZP_POOL_NULL_ID;
+ }
  zp_pool_release(&bp->_node_allocator, parent);
 }
 
+/*
+  pair traversal recursive
+  
+       • --> _root
+      / \
+  |--•   \
+  |       • -->  right
+left     / \ 
+        /   \ --> subtree
+       •     •
+      / \   / \
+     /   \ •   \
+    •     •     •
+ 
+ if right_id is a leaf
+ you use the right_id, compare it against the entire subtree(child_left, child_right)
+ 
+ if left_id is a leaf
+ then do the same thing for the left_id
 
-zp_noinline static void traverse_pair_recursive(zp_broadphase2d *const bp, zp_pool_id a_id, zp_pool_id b_id, void (*func)(zp_container_id, zp_container_id, void *), void *ptr, uint32_t depth, zp_broadphase2d_treetranversalinfo *info) {
+ if none of them, then traverse them with all 
+ possible combinations
+ • a_left - b_left
+ • a_left - b_right
+ • a_right - b_left
+ • a_right - b_right
+*/
+zp_noinline static void traverse_pair_recursive(zp_broadphase2d *const bp, zp_pool_id a_id, zp_pool_id b_id, void (*func)(zp_container_id, zp_container_id, void *), void *ptr, uint32_t depth, zp_broadphase2d_treetraversalinfo *info) {
  if(zp_pool_id_isnull(a_id) || zp_pool_id_isnull(b_id))
   return;
 
@@ -275,7 +402,7 @@ zp_noinline static void traverse_pair_recursive(zp_broadphase2d *const bp, zp_po
 }
 
 
-zp_noinline static void traverse_self_recursive(zp_broadphase2d *const bp, zp_pool_id n_id, void (*func)(zp_container_id, zp_container_id, void *), void *ptr, uint32_t depth, zp_broadphase2d_treetranversalinfo *info) {
+zp_noinline static void traverse_self_recursive(zp_broadphase2d *const bp, zp_pool_id n_id, void (*func)(zp_container_id, zp_container_id, void *), void *ptr, uint32_t depth, zp_broadphase2d_treetraversalinfo *info) {
  if(zp_pool_id_isnull(n_id))
   return;
 
@@ -312,43 +439,207 @@ zp_noinline static void traverse_delete_non_leaf(zp_broadphase2d *const bp, zp_p
  Top down median split O(n log(n))
  not nearly as optimal, bit still balance and fast overall
 */
-static size_t zp_partition_median(zp_broadphase2d *bp, zp_pool_id *leafs, size_t count, int axis) {
- 
- size_t mid = count >> 1;
- size_t i = 0, j = count - 1;
- 
- zp_broadphase2d_node *pivot_node = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, leafs[mid]);
- float pivot_val = (axis == 0) ? (pivot_node->_aabb._min.x + pivot_node->_aabb._max.x) * 0.5f  : (pivot_node->_aabb._min.y + pivot_node->_aabb._max.y) * 0.5f;
 
- while(i <= j) {
-  while(1) {
-   zp_broadphase2d_node *node = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, leafs[i]);
-   float val = (axis == 0)  ? (node->_aabb._min.x + node->_aabb._max.x) * 0.5f  : (node->_aabb._min.y + node->_aabb._max.y) * 0.5f;
-   if(val >= pivot_val)
-    break;
-   i++;
- }
- while(1) {
-  zp_broadphase2d_node *node = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, leafs[j]);
-  float val = (axis == 0) ? (node->_aabb._min.x + node->_aabb._max.x) * 0.5f  : (node->_aabb._min.y + node->_aabb._max.y) * 0.5f;
-  if(val <= pivot_val || j == 0)
-   break;
-  j--;
- }
- if(i <= j) {
-  zp_pool_id tmp = leafs[i];
-  leafs[i] = leafs[j];
-  leafs[j] = tmp;
-  i++;
-  if(j > 0) j--;
-  }
- }
- size_t count_half = count >> 1;
- return (i > count_half) ? count_half : i;
+
+/*
+ partition median
+ re aranges the object data based on its position and opposite extent.
+ 
+ for x-axis
+ if the object is lower than the pivot (global center point)
+ they will be reordered at the left side, otherwise they go tp the right side
+ 
+ same for y-axis
+ 
+ and then return the center index.
+*/
+
+zp_noinline static int compare_leaf_x(const zp_pool_id *a, const zp_pool_id *b, zp_broadphase2d *zp_restrict const user_data) {
+ zp_broadphase2d *bp = (zp_broadphase2d*)user_data;
+ zp_broadphase2d_node *node_a = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, *(zp_pool_id*)a);
+ zp_broadphase2d_node *node_b = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, *(zp_pool_id*)b);
+    
+ float ca = node_a->_aabb._min.x + node_a->_aabb._max.x;
+ float cb = node_b->_aabb._min.x + node_b->_aabb._max.x;
+ return (int)(ca > cb) - (int)(ca < cb);
+}
+
+zp_noinline static int compare_leaf_y(const zp_pool_id *a, const zp_pool_id *b, zp_broadphase2d *zp_restrict const user_data) {
+ zp_broadphase2d *bp = (zp_broadphase2d*)user_data;
+ zp_broadphase2d_node *node_a = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, *(zp_pool_id*)a);
+ zp_broadphase2d_node *node_b = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, *(zp_pool_id*)b);
+    
+ float ca = node_a->_aabb._min.y + node_a->_aabb._max.y;
+ float cb = node_b->_aabb._min.y + node_b->_aabb._max.y;
+ return (int)(ca > cb) - (int)(ca < cb);
 }
 
 
+ 
+zp_noinline void quick_select_id_x(zp_broadphase2d *const zp_restrict bp, zp_pool_id *base, size_t left, size_t right, size_t target) {
+ while(left < right) {
+  size_t i = left;
+  size_t j = right;
 
+  zp_pool_id pivot = base[left + ((right - left) >> 1)];
+  while(i <= j) {
+   while(compare_leaf_x(base + i, &pivot, bp) < 0)
+    i++;
+   while(compare_leaf_x(&pivot, base + j, bp) < 0)
+    j--;
+   if(i <= j) {
+    {
+     /* swap */
+     zp_pool_id tmp = base[i];
+     base[i] = base[j];
+     base[j] = tmp;
+    }
+    i++;
+    if(j == left)
+     break;
+    j--;
+   }
+  }
+  if(target <= j) {
+   right = j;
+  } else if (target >= i) {
+   left = i;
+  } else {
+   break; /* between r and j */
+  }
+ }
+}
+
+zp_noinline void quick_select_id_y(zp_broadphase2d *const zp_restrict bp, zp_pool_id *base, size_t left, size_t right, size_t target) {
+ while(left < right) {
+  size_t i = left;
+  size_t j = right;
+
+  zp_pool_id pivot = base[left + ((right - left) >> 1)];
+  while(i <= j) {
+   while(compare_leaf_y(base + i, &pivot, bp) < 0)
+    i++;
+   while(compare_leaf_y(&pivot, base + j, bp) < 0)
+    j--;
+   if(i <= j) {
+    {
+     /* swap */
+     zp_pool_id tmp = base[i];
+     base[i] = base[j];
+     base[j] = tmp;
+    }
+    i++;
+    if(j == left)
+     break;
+    j--;
+   }
+  }
+  if(target <= j) {
+   right = j;
+  } else if (target >= i) {
+   left = i;
+  } else {
+   break; /* between r and j */
+  }
+ }
+}
+
+
+/*
+ spatial partition
+ 
+ the larger extent will be choosen, lets say X
+ it will be like this
+
+
+
+
+ [Entire Region]
+ 
+   Group A         Group B
+ ________________________________
+ |              |               |
+ |              |               |
+ |              |               |
+ |              |               |
+ |              |               |
+ |              |               |
+ |              |               |
+ |______________|_______________|
+
+ they will be devided into 2 groups of object
+ allocate a new BVH node then it will become a parent of those 2
+
+       •  --> new parent allocated
+      / \
+     /   \
+    •     •  --> Group B (subtree)
+    |
+    |--------> Group A (subtree)
+
+
+ then... recursively do the same thing again.
+
+
+
+
+
+
+ [Right Side]
+ _______________
+ |              |
+ |              | Group A
+ |              |
+ |______________|
+ |              |
+ |              | Group B
+ |              |
+ |______________|
+
+       •
+      / \
+     /   \
+    •     • --> allocate a new parent then repeat
+         / \
+        /   \
+       •     • --> Group B (subtree)
+       |
+       |--------> Group A (subtree)
+      
+ because Y-extent is larger, it will be splitted into Y axis
+ then recursive again
+
+
+
+
+
+
+ [Top Side]
+
+   GA       GB    --> group A and group B
+  ______________
+ |      |       |
+ |      |       | Group B
+ |      |       |
+ |______|_______|
+
+       •
+      / \
+     /   \
+    •     •
+         / \
+        /   \
+       •     •
+      / \
+     /   \
+    •     • --> Group B(subtree)
+    |
+    |--------> Group A(subtree)
+    
+ repeats until they it encodes everything into the 
+ BVH tree
+ 
+*/
 static zp_pool_id build_top_down_recursive(zp_broadphase2d *bp, zp_pool_id *leafs, size_t count) {
  if(count == 0) return ZP_POOL_NULL_ID;
  if(count == 1) return leafs[0];
@@ -361,13 +652,13 @@ static zp_pool_id build_top_down_recursive(zp_broadphase2d *bp, zp_pool_id *leaf
  
  for(size_t i = 0; i < count; ++i) {
   zp_broadphase2d_node *leaf = (zp_broadphase2d_node *)zp_pool_get(&bp->_node_allocator, leafs[i]);
-  float cx = (leaf->_aabb._min.x + leaf->_aabb._max.x) * 0.5f;
-  float cy = (leaf->_aabb._min.y + leaf->_aabb._max.y) * 0.5f;
+  float center_x = (leaf->_aabb._min.x + leaf->_aabb._max.x) * 0.5f;
+  float center_y = (leaf->_aabb._min.y + leaf->_aabb._max.y) * 0.5f;
 
-  centroid_bounds._min.x = zp_min(centroid_bounds._min.x, cx);
-  centroid_bounds._min.y = zp_min(centroid_bounds._min.y, cy);
-  centroid_bounds._max.x = zp_max(centroid_bounds._max.x, cx);
-  centroid_bounds._max.y = zp_max(centroid_bounds._max.y, cy);
+  centroid_bounds._min.x = zp_min(centroid_bounds._min.x, center_x);
+  centroid_bounds._min.y = zp_min(centroid_bounds._min.y, center_y);
+  centroid_bounds._max.x = zp_max(centroid_bounds._max.x, center_x);
+  centroid_bounds._max.y = zp_max(centroid_bounds._max.y, center_y);
  }
 
 
@@ -375,9 +666,19 @@ static zp_pool_id build_top_down_recursive(zp_broadphase2d *bp, zp_pool_id *leaf
  float extent_y = centroid_bounds._max.y - centroid_bounds._min.y;
 
  int axis = (extent_x > extent_y) ? 0 : 1;
- size_t mid = zp_partition_median(bp, leafs, count, axis);
- if (mid == 0 || mid == count) mid = count / 2; // Fallback for identical centroid values
+ size_t mid = 0;
+ if(count > 1) {
+  mid = count >> 1;
+  if(axis == 0)
+   quick_select_id_x(bp, leafs, 0, count - 1, mid);
+  else
+   quick_select_id_y(bp, leafs, 0, count - 1, mid);
+ }
 
+ /*
+  then allocate a new BVH node.
+  this would act as a parent of those 2 partition
+ */
  zp_pool_id parent_id = zp_pool_acquire(&bp->_node_allocator);
  zp_broadphase2d_node *parent = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, parent_id);
  parent->_id = parent_id;
@@ -454,17 +755,17 @@ void zp_broadphase2d_remove_element(zp_broadphase2d *zp_restrict const bp, const
 
 
 void zp_broadphase2d_traverse_pairs(zp_broadphase2d *zp_restrict const bp, void (*func)(zp_container_id, zp_container_id, void*), void *ptr) {
- zp_broadphase2d_treetranversalinfo tree_info;
- memset(&tree_info, 0, sizeof(zp_broadphase2d_treetranversalinfo));
+ zp_broadphase2d_treetraversalinfo tree_info;
+ memset(&tree_info, 0, sizeof(zp_broadphase2d_treetraversalinfo));
  traverse_self_recursive(bp, bp->_root, func, ptr, 0, &tree_info);
 
- float tolerance_factor = 1.5f;
+ float tolerance_factor = 2.5f;
  float log_n = zp_log2((float)bp->_leaf_size);
  uint32_t max_depth = zp_round(tolerance_factor * log_n);
  
  int ca = tree_info._max_depth > max_depth;
- int cb = tree_info._node_visits > (bp->_leaf_size * 8u);
- int cc = tree_info._pair_test > (bp->_leaf_size * 20u);
+ int cb = tree_info._node_visits > (bp->_leaf_size * 20u);
+ int cc = tree_info._pair_test > (bp->_leaf_size * 40u);
 
  if(ca && cb && cc)
   bp->_frame_tolerance++;
@@ -476,7 +777,10 @@ void zp_broadphase2d_traverse_pairs(zp_broadphase2d *zp_restrict const bp, void 
 
 /*
  Greedy bottom up rebuild. O(n ^ 3)
- can optimize the tree up to nearly 100% efficiency
+ can optimize the tree up to very optimal quality of BVH tree
+ 
+ it scans the entire leafs array O(n) and then bruite force for every iteration O(n ^ 2) 
+ to find the best low cost possible 
 */
 void zp_broadphase2d_greedy_rebuild_tree(zp_broadphase2d *zp_restrict const bp, void *zp_restrict w) {
  /* recursive delete */
@@ -500,7 +804,7 @@ void zp_broadphase2d_greedy_rebuild_tree(zp_broadphase2d *zp_restrict const bp, 
  zp_compiler_memory_barrier();
  
  size_t count = body_size;
- while (count > 1) {
+ while(count > 1) {
 
   zp_pool_id parent_id = zp_pool_acquire(&bp->_node_allocator);
   zp_broadphase2d_node *parent = (zp_broadphase2d_node*)zp_pool_get(&bp->_node_allocator, parent_id);

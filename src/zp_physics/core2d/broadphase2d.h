@@ -19,7 +19,7 @@ typedef struct {
  uint32_t _node_visits;
  uint32_t _max_depth;
  uint32_t _pair_test;
-} zp_broadphase2d_treetranversalinfo;
+} zp_broadphase2d_treetraversalinfo;
 
 typedef struct {
  zp_pool    _node_allocator;

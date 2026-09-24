@@ -50,6 +50,8 @@ typedef union {
 zp_cold zp_noinline void zp_body2d_init(zp_body2d *const zp_restrict body, const void *const zp_restrict data);
 zp_hot void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt);
 zp_hot void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt);
+zp_hot int zp_body2d_asleep(zp_body2d *const zp_restrict body);
+zp_hot void zp_body2d_awake(zp_body2d *const zp_restrict body);
 
 #endif
 
