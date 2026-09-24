@@ -36,7 +36,7 @@
 
 • change zp_round to a more predictable code
 
-• dynamic aabb binary tree integration
+• dynamic bvh binary tree integration
 
 • expose more configuration during world2d creation
 
@@ -55,3 +55,12 @@
 • switch zp_handle into struct for type safety
 
 • add feature that can switch between 16-bit and 32-bit ids
+
+• bvh tree optimization for median split rebuild
+
+• change uint16_t into size_t in contact hash 2d
+
+• use prefetch compiler hint
+
+• optimze the contact hash table
+
