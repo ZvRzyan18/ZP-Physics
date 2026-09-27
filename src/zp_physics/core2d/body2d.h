@@ -32,9 +32,11 @@ typedef struct {
  float            _restitution;
  float            _friction;
  float            _idle_time;
-  
+ 
  zp_pool_id       _aabb_node;
- zp_container_id  _id; /* minmize the byte size */
+ zp_container_id  _id;
+ 
+
 } zp_head2d;
 
 typedef struct {

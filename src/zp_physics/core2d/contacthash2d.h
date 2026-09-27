@@ -24,9 +24,12 @@ typedef struct {
 zp_cold int zp_contacthash2d_init(zp_contacthash2d *const zp_restrict hash, const size_t bucket_size, const size_t reserve, const float growth_base);
 zp_cold void zp_contacthash2d_destroy(zp_contacthash2d *const zp_restrict hash);
 void zp_contacthash2d_insert(zp_contacthash2d *const zp_restrict hash, const zp_manifold2d *const zp_restrict m);
-void zp_contacthash2d_remove_unused(zp_contacthash2d *const zp_restrict hash);
 void zp_contacthash2d_get(zp_contacthash2d *const zp_restrict hash, const zp_container_id a, const zp_container_id b, zp_manifold2d **m);
+void zp_contacthash2d_remove_node(zp_contacthash2d *const zp_restrict hash, zp_contacthash2d_node *zp_restrict const node);
 
+/*
+void zp_contacthash2d_remove_unused(zp_contacthash2d *const zp_restrict hash, void (*intercept)(zp_container_id a, zp_container_id b, void *ptr), void *ptr);
+*/
 
 #endif
 

@@ -5,12 +5,16 @@
 #include "zp_physics/container.h"
 #include "zp_physics/core2d/contacthash2d.h"
 #include "zp_physics/core2d/broadphase2d.h"
-
+#include "zp_physics/core2d/solver2d.h"
+#include "zp_physics/core2d/island2d.h"
 
 struct zp_world2d {
- zp_container     _body_container;
+ zp_container     _body_container; 
  zp_contacthash2d _contacts;
  zp_broadphase2d  _broadphase;
+ 
+ 
+ zp_solver_input2d _solver_input;
  
  zp_vec2          _gravity;
 
