@@ -117,37 +117,7 @@ void zp_contacthash2d_insert(zp_contacthash2d *const zp_restrict hash, const zp_
 
 
 
-/*
- if its not queried, more likely collision does not exist anymore,
- so remove them.
-*/
-void zp_contacthash2d_remove_unused(zp_contacthash2d *const zp_restrict hash) {
- uint16_t i = 0;
- while(i < hash->_memory_pool._size) {
- 
-  zp_contacthash2d_node *current_node = (zp_contacthash2d_node*)(hash->_memory_pool._bytes + ((size_t)i * (size_t)hash->_memory_pool._stride));
 
-  if(current_node->_value._queried) {
-   current_node->_value._queried = 0;
-  } else {
-   if(!zp_container_id_isnull(current_node->_prev)) {
-     assert((hash->_memory_pool._to_index_lut[current_node->_prev._val]._val < hash->_memory_pool._size) && "invalid id");
-    ((zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, current_node->_prev))->_next = current_node->_next;
-   } else
-    hash->_bucket[make_hash_id(current_node->_value._body_a._val, current_node->_value._body_b._val) & hash->_bucket_index_mask] = current_node->_next;
-  
-   if(!zp_container_id_isnull(current_node->_next)) {
-    assert((hash->_memory_pool._to_index_lut[current_node->_next._val]._val < hash->_memory_pool._size) && "invalid id");
-    ((zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, current_node->_next))->_prev = current_node->_prev;
-   }
-    
-   assert((hash->_memory_pool._to_index_lut[current_node->_allocation._val]._val < hash->_memory_pool._size) && "invalid id");
-   zp_container_release(&hash->_memory_pool, current_node->_allocation);
-   continue;
-  }
-  i++;
- }
-}
 
 
 /*
@@ -176,4 +146,58 @@ void zp_contacthash2d_get(zp_contacthash2d *const zp_restrict hash, const zp_con
  }
  *m = NULL;
 }
+
+
+void zp_contacthash2d_remove_node(zp_contacthash2d *const zp_restrict hash, zp_contacthash2d_node *zp_restrict const node) {
+ if(!zp_container_id_isnull(node->_prev)) {
+  assert((hash->_memory_pool._to_index_lut[node->_prev._val]._val < hash->_memory_pool._size) && "invalid id");
+  ((zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, node->_prev))->_next = node->_next;
+ } else
+  hash->_bucket[make_hash_id(node->_value._body_a._val, node->_value._body_b._val) & hash->_bucket_index_mask] = node->_next;
+  
+ if(!zp_container_id_isnull(node->_next)) {
+  assert((hash->_memory_pool._to_index_lut[node->_next._val]._val < hash->_memory_pool._size) && "invalid id");
+  ((zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, node->_next))->_prev = node->_prev;
+ }
+    
+ assert((hash->_memory_pool._to_index_lut[node->_allocation._val]._val < hash->_memory_pool._size) && "invalid id");
+ zp_container_release(&hash->_memory_pool, node->_allocation);
+}
+
+
+/*
+ if its not queried, more likely collision does not exist anymore,
+ so remove them.
+*/
+/*
+void zp_contacthash2d_remove_unused(zp_contacthash2d *const zp_restrict hash, void (*intercept)(zp_container_id a, zp_container_id b, void *ptr), void *ptr) {
+ size_t i = 0;
+ while(i < hash->_memory_pool._size) {
+ 
+  zp_contacthash2d_node *current_node = (zp_contacthash2d_node*)(hash->_memory_pool._bytes) + i;
+
+  if(current_node->_value._queried) {
+   current_node->_value._queried = 0;
+  } else {
+   intercept(current_node->_value._body_a, current_node->_value._body_b, ptr);
+   if(!zp_container_id_isnull(current_node->_prev)) {
+     assert((hash->_memory_pool._to_index_lut[current_node->_prev._val]._val < hash->_memory_pool._size) && "invalid id");
+    ((zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, current_node->_prev))->_next = current_node->_next;
+   } else
+    hash->_bucket[make_hash_id(current_node->_value._body_a._val, current_node->_value._body_b._val) & hash->_bucket_index_mask] = current_node->_next;
+  
+   if(!zp_container_id_isnull(current_node->_next)) {
+    assert((hash->_memory_pool._to_index_lut[current_node->_next._val]._val < hash->_memory_pool._size) && "invalid id");
+    ((zp_contacthash2d_node*)zp_container_get(&hash->_memory_pool, current_node->_next))->_prev = current_node->_prev;
+   }
+    
+   assert((hash->_memory_pool._to_index_lut[current_node->_allocation._val]._val < hash->_memory_pool._size) && "invalid id");
+   zp_container_release(&hash->_memory_pool, current_node->_allocation);
+   continue;
+  }
+  i++;
+ }
+}
+*/
+
 

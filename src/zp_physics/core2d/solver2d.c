@@ -24,7 +24,7 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
  float a_inv_mass = body_a->_head._inv_mass;
  float a_inv_inertia = body_a->_head._inv_inertia;
  float a_restitution = body_a->_head._restitution;
- float a_omega = body_a->_head._omega;
+ //float a_omega = body_a->_head._omega;
 
  zp_compiler_memory_barrier();
 
@@ -34,7 +34,7 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
  float b_inv_mass = body_b->_head._inv_mass;
  float b_inv_inertia = body_b->_head._inv_inertia;
  float b_restitution = body_b->_head._restitution;
- float b_omega = body_b->_head._omega;
+ //float b_omega = body_b->_head._omega;
 
 
 
@@ -106,11 +106,11 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
   -------------------------------------
   
   */
-  float x = impact_speed * 0.2f;
+  float x = impact_speed;
   contact->_bias = (impact_speed * e) * zp_tanh(zp_min(x, 0.0f));
  }
 
-
+/*
  float la = zp_dot2(a_velocity, a_velocity);
  float lb = zp_dot2(b_velocity, b_velocity);
  float oa = zp_abs(a_omega);
@@ -124,7 +124,7 @@ void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void
  if(lb > vt || ob > ot)
   zp_body2d_awake(body_b);
  }
-
+*/
 }
 
 

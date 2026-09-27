@@ -2,7 +2,7 @@
 #include "zp_physics/core2d.h"
 #include "zp_physics/core2d/world2d.h"
 #include <assert.h>
-
+#include <stdio.h>
 
 zp_cold zp_noinline static void init_box(zp_box2d *const zp_restrict body, const zp_create_body2d *const zp_restrict data);
 zp_hot zp_inline void update_aabb(zp_body2d *const zp_restrict body);
@@ -49,7 +49,7 @@ zp_hot void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *con
 /*
  if(zp_body2d_asleep(body))
   return;
- */
+*/
  const zp_world2d *const ctx = (zp_world2d*)world;
  const zp_vec2 dt_vec = zp_stv2(dt);
  const zp_vec2 inv_mass = zp_stv2(body->_head._inv_mass);
@@ -69,15 +69,14 @@ zp_hot void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *con
 
 
 zp_hot void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt) {
- (void)world;
+ (void)world; 
 /*
  if(zp_body2d_asleep(body))
   return;
 */
 	if(body->_head._flags & ZP_BODY_IS_SLEEP_2D) {
-	 if(body->_head._idle_time > 1.37f) {
+	 if(body->_head._idle_time > 0.0037f) {
 	  body->_head._idle_time = zp_nan();
-	  return;
 	 }
 	 body->_head._idle_time += dt;
 	}
@@ -89,12 +88,19 @@ zp_hot void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *con
  const float ot =  0.8f;
  if(la < vt && oa < ot && !(body->_head._flags & ZP_BODY_IS_SLEEP_2D)) {
   body->_head._idle_time += dt;
-  if(body->_head._idle_time > 3.97f) {
+  if(body->_head._idle_time > 1.97f) {
    body->_head._idle_time = 0.0f;
    body->_head._flags |= ZP_BODY_IS_SLEEP_2D;
-   return;
+   /* more agressive damping */
+   /*
+   float ld = 0.2f;
+   float ad = 0.2f;
+   body->_head._velocity.x *= ld;
+   body->_head._velocity.y *= ld;
+   body->_head._omega *= ad;*/
   }
  }
+
 
  zp_vec2 dt_vec = zp_stv2(dt);
 
@@ -115,15 +121,15 @@ zp_hot void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *con
  if(update_rotation) {
   float omega = body->_head._omega * dt;
   zp_complex omega_complex;
-   zp_set_real(&omega_complex, 1.0f - 0.5f * omega * omega);
-   zp_set_imag(&omega_complex, omega);
-  /*
-  // zp_abs(omega) < 0.06f
-   float sine, cosine;
-   zp_sincos(omega, &sine, &cosine);
-   zp_set_real(&omega_complex, cosine);
-   zp_set_imag(&omega_complex, sine);
-  */
+   if(zp_abs(omega) < 0.06f) {
+    zp_set_real(&omega_complex, 1.0f - 0.5f * omega * omega);
+    zp_set_imag(&omega_complex, omega);
+   } else {
+    float sine, cosine;
+    zp_sincos(omega, &sine, &cosine);
+    zp_set_real(&omega_complex, cosine);
+    zp_set_imag(&omega_complex, sine);
+   }
   body->_head._rotation = zp_cmul(omega_complex, body->_head._rotation);
   body->_head._rotation = zp_cunit(body->_head._rotation);
  }
@@ -147,6 +153,7 @@ zp_hot void zp_body2d_awake(zp_body2d *const zp_restrict body) {
  body->_head._flags &= ~ZP_BODY_IS_SLEEP_2D;
  body->_head._idle_time = 0.0f;
 }
+
 
 /*
  statics

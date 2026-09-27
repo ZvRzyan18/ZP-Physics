@@ -54,7 +54,6 @@ typedef struct {
 } zp_manifold2d;
 
 
-
 void zp_manifold2d_combine(zp_manifold2d *const zp_restrict out, const zp_manifold2d *const zp_restrict a);
 uint8_t zp_manifold2d_box_vs_box(zp_manifold2d *const zp_restrict out, const zp_box2d *const zp_restrict a, const zp_box2d *const zp_restrict b);
 

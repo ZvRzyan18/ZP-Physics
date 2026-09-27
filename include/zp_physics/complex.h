@@ -71,9 +71,6 @@ zp_inline zp_vec2 zp_as_vector2(zp_complex a) {
 
 zp_inline zp_complex zp_cabs(zp_complex c) {
 #ifdef zp_has_complex_extension
- /*
-  return __builtin_cabs(c);
- */
  return zp_as_complex2(zp_abs2(zp_as_vector2(c)));
 #else
  return zp_abs2(c);
