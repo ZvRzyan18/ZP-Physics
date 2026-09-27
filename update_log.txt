@@ -64,3 +64,8 @@
 
 • optimze the contact hash table
 
+• add island experimental/prototype
+
+• remove O(n) manifold unqueried removal
+
+
