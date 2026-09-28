@@ -57,7 +57,7 @@
 #define zp_pure
 #define zp_hot 
 #define zp_cold 
-
+#define zp_prefetch(v)
 #define zp_compiler_memory_barrier() 
 
 #endif
