@@ -68,4 +68,22 @@
 
 • remove O(n) manifold unqueried removal
 
+• optimize 2d physics pipeline
 
+• allow temporal coherence(skip collision for several frames) per sleeping object
+
+• correctly use temporal penetration depth
+
+• inline zp_round, zp_ceil, zp_floor 
+
+• optimize vec2 cross 
+
+• optimize zp_log2
+
+• optimize zp_exp2
+
+• add dedicated helper function to track rigid bodies' sleeping state
+
+• improve the container's insertion sorter
+
+• remove the solver's relaxation
