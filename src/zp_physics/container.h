@@ -38,7 +38,7 @@ zp_cold int zp_container_init(zp_container *const zp_restrict c, const uint16_t 
 zp_cold void zp_container_destroy(zp_container *const zp_restrict c);
 zp_container_id zp_container_acquire(zp_container *const zp_restrict c);
 void zp_container_release(zp_container *const zp_restrict c, zp_container_id id);
-zp_cold void zp_container_insertion_sort(zp_container *const zp_restrict c, int (*should_swap)(void*, void*));
+zp_cold void zp_container_insertion_sort(zp_container *const zp_restrict c, int (*should_swap)(void*, void*, void*), void *ctx);
 
 zp_hot zp_inline void* zp_container_get(zp_container *const zp_restrict c, const zp_container_id id) {
  assert(!zp_container_id_isnull(id));

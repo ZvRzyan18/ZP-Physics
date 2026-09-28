@@ -13,6 +13,7 @@ typedef struct {
  uint16_t _increase_count;
 } zp_bump;
 
+#define ZP_BUMP_NULL_ID 0xFFFFFFFF
 
 zp_cold int zp_bump_init(zp_bump *const zp_restrict b, const size_t initial_size, const float growth_base);
 zp_cold void zp_bump_destroy(zp_bump *const zp_restrict b);

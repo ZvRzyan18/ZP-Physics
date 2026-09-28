@@ -207,14 +207,14 @@ void zp_container_release(zp_container *const zp_restrict c, const zp_container_
 }
 
 
-zp_cold void zp_container_insertion_sort(zp_container *const zp_restrict c, int (*should_swap)(void*, void*)) {
+zp_cold void zp_container_insertion_sort(zp_container *const zp_restrict c, int (*should_swap)(void*, void*, void*), void *ctx) {
  for(size_t i = 1; i < c->_size; i++) {
   int j = i;
   int jm1 = j - 1;
   void *j_data = c->_bytes + (j * c->_stride);
   void *jm1_data = c->_bytes + (jm1 * c->_stride);
   
-  while (j > 0 && should_swap(jm1_data, j_data)) {
+  while (j > 0 && should_swap(jm1_data, j_data, ctx)) {
    memswap(j_data, jm1_data, c->_stride);
    zp_container_id j_id = c->_to_id_lut[j];
    zp_container_id jm1_id = c->_to_id_lut[jm1];
