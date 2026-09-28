@@ -44,7 +44,6 @@ zp_const zp_inline float zp_copysign(float a, float b) {
  use std fmaf instead?
 */
 zp_const zp_inline float zp_fma(const float a, const float b, const float c) {
-/*
 #if defined(__aarch64__)
  float result;
  __asm__ volatile(
@@ -54,8 +53,8 @@ zp_const zp_inline float zp_fma(const float a, const float b, const float c) {
  );
  return result;
 #else
-*/
  return a * b + c;
+#endif
 }
 
 /*
@@ -107,16 +106,38 @@ zp_const zp_inline float zp_max(const float a, const float b) {
 #endif
 }
 
-zp_const uint64_t zp_alignto(const uint64_t x, const uint8_t alignment);
-zp_const uint32_t zp_nextp2(const uint32_t x);
+
 
 /*
  use std math instead? 
  for round, ceil, floor
 */
-zp_pure float zp_round(const float x);
-zp_pure float zp_ceil(const float x);
-zp_pure float zp_floor(const float x);
+
+zp_inline float zp_round(const float x) {
+ int a = (int)(x + (x >= 0.0f ? 0.5f : -0.5f));
+ return (float)a;
+}
+
+/*
+ every fractional digits, automatically rounds up towards positive infinity
+*/
+zp_inline float zp_ceil(const float x) {
+ int i = (int)x;
+ return (float)(x > 0 && x != (float)i) ? i + 1 : i;
+}
+
+/*
+ every fractional digits, automatically rounds up towards negative infinity
+*/
+zp_inline float zp_floor(const float x) {
+ int i = (int)x;
+ return (float)(x < 0 && x != (float)i) ? i - 1 : i;
+}
+
+
+zp_const uint64_t zp_alignto(const uint64_t x, const uint8_t alignment);
+zp_const uint32_t zp_nextp2(const uint32_t x);
+
 
 /*
  trigs

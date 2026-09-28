@@ -30,17 +30,18 @@ typedef struct {
  
  zp_vec2  _updated_r1;
  zp_vec2  _updated_r2;
-
+ 
  zp_vec2  _normal;
  float    _depth;
- float    _updated_depth;
- 
+ float    _target_depth;
+
  float    _mass_normal;
  float    _mass_tangent;
  float    _bias;
-  
+ 
  float    _accumulated_normal;
  float    _accumulated_tangent;
+ 
  zp_contact2d_id _id;
 } zp_contact2d;
 
@@ -51,6 +52,7 @@ typedef struct {
  
  uint8_t         _contact_count;
  uint8_t         _queried;
+ uint8_t         _coherent;
 } zp_manifold2d;
 
 

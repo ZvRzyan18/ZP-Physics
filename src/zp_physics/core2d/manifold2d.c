@@ -372,6 +372,7 @@ uint8_t zp_manifold2d_box_vs_box(zp_manifold2d *const zp_restrict out, const zp_
  }
  out->_body_a = (zp_container_id)ref_body->_head._id;
  out->_body_b = (zp_container_id)inc_body->_head._id;
+ 
  return out->_contact_count;
 }
 

@@ -36,7 +36,9 @@ typedef struct {
  zp_pool_id       _aabb_node;
  zp_container_id  _id;
  
-
+ size_t           _island_id;
+ zp_container_id  _island_next;
+ zp_container_id  _island_prev;
 } zp_head2d;
 
 typedef struct {
@@ -54,6 +56,7 @@ zp_hot void zp_body2d_updatev(zp_body2d *const zp_restrict body, const void *con
 zp_hot void zp_body2d_updatep(zp_body2d *const zp_restrict body, const void *const zp_restrict world, const float dt);
 zp_hot int zp_body2d_asleep(zp_body2d *const zp_restrict body);
 zp_hot void zp_body2d_awake(zp_body2d *const zp_restrict body);
+zp_hot int zp_body2d_psleep(zp_body2d *const zp_restrict body);
 
 #endif
 

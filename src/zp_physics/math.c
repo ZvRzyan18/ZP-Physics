@@ -29,27 +29,6 @@ zp_const uint32_t zp_nextp2(const uint32_t x) {
 }
 
 
-zp_pure float zp_round(const float x) {
- int a = (int)(x + (x >= 0.0f ? 0.5f : -0.5f));
- return (float)a;
-}
-
-/*
- every fractional digits, automatically rounds up towards positive infinity
-*/
-zp_pure float zp_ceil(const float x) {
- int i = (int)x;
- return (float)(x > 0 && x != (float)i) ? i + 1 : i;
-}
-
-/*
- every fractional digits, automatically rounds up towards negative infinity
-*/
-zp_pure float zp_floor(const float x) {
- int i = (int)x;
- return (float)(x < 0 && x != (float)i) ? i - 1 : i;
-}
-
 
 /*
  coeffs polynomial with lowest degree
@@ -450,12 +429,12 @@ zp_pure float zp_log2(const float x) {
  
  if(x >= 1.0f && x < 2.0f) {
   ma = x;
-  return ((((LOG2[0] * ma + LOG2[1]) * ma + LOG2[2]) * ma + LOG2[3]) * ma + LOG2[4]);
+  return zp_fma(zp_fma(zp_fma(zp_fma(LOG2[0], ma, LOG2[1]), ma, LOG2[2]), ma, LOG2[3]), ma, LOG2[4]);
  } else if(x < 1.0f) {
  	bits.f = 1.0f / x;
   mantissa.i = 1065353216U | (bits.i & 0x007FFFFF);
   ma = mantissa.f;
-  mx = ((((LOG2[0] * ma + LOG2[1]) * ma + LOG2[2]) * ma + LOG2[3]) * ma + LOG2[4]);
+  mx = zp_fma(zp_fma(zp_fma(zp_fma(LOG2[0], ma, LOG2[1]), ma, LOG2[2]), ma, LOG2[3]), ma, LOG2[4]);
   mx = (float)((int32_t)(bits.i >> 23) - 127) + mx;
   return -mx;
  }
@@ -463,7 +442,7 @@ zp_pure float zp_log2(const float x) {
  bits.f = x;
  mantissa.i = 1065353216U | (bits.i & 0x007FFFFF);
  ma = mantissa.f;
- mx = ((((LOG2[0] * ma + LOG2[1]) * ma + LOG2[2]) * ma + LOG2[3]) * ma + LOG2[4]);
+ mx = zp_fma(zp_fma(zp_fma(zp_fma(LOG2[0], ma, LOG2[1]), ma, LOG2[2]), ma, LOG2[3]), ma, LOG2[4]);
  mx = (float)((int32_t)(bits.i >> 23) - 127) + mx;
  return mx;
 }
@@ -505,13 +484,13 @@ zp_pure float zp_exp2(const float x) {
 
  if(zp_abs(x) < 0.5f) {
  	a = x;
-  return ((((EXP2[0] * a + EXP2[1]) * a + EXP2[2]) * a + EXP2[3]) * a + EXP2[4]);
+  return zp_fma(zp_fma(zp_fma(zp_fma(EXP2[0], a, EXP2[1]), a, EXP2[2]), a, EXP2[3]), a, EXP2[4]);
  }
 	a = x;
  whole = (float)(a - 0.5f);
  a = a - ((float)whole);
  bits.i = (uint32_t)((int32_t)(127 + whole) << 23);
- mx = ((((EXP2[0] * a + EXP2[1]) * a + EXP2[2]) * a + EXP2[3]) * a + EXP2[4]);
+ mx = zp_fma(zp_fma(zp_fma(zp_fma(EXP2[0], a, EXP2[1]), a, EXP2[2]), a, EXP2[3]), a, EXP2[4]);
  return bits.f * mx;
 }
 

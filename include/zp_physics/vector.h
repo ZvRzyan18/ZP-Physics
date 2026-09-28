@@ -87,7 +87,7 @@ zp_inline zp_vec2 zp_perp2(const zp_vec2 a) {
 }
 
 zp_inline float zp_cross2(const zp_vec2 a, const zp_vec2 b) {
- return a.x * b.y - a.y * b.x;
+ return zp_fma(a.x, b.y, -a.y * b.x);
 }
 
 zp_inline zp_vec2 zp_cross_sv2(const float a, const zp_vec2 b) {
