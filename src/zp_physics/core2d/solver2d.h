@@ -17,7 +17,6 @@ typedef struct {
 void zp_manifold2d_soft_prepare_contact(zp_manifold2d *const zp_restrict m, void *const zp_restrict w, const zp_solver_input2d *const input);
 void zp_manifold2d_soft_presolve_contact(zp_manifold2d *const zp_restrict m, void *const zp_restrict w, const zp_solver_input2d *const input);
 void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *const zp_restrict w, const zp_solver_input2d *const input);
-void zp_manifold2d_soft_relaxation(zp_manifold2d *const zp_restrict m, void *const zp_restrict w, const zp_solver_input2d *const input);
 
 
 #endif

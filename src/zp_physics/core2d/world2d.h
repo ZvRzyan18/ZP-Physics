@@ -13,7 +13,6 @@ struct zp_world2d {
  zp_contacthash2d _contacts;
  zp_broadphase2d  _broadphase;
  
- 
  zp_solver_input2d _solver_input;
  
  zp_vec2          _gravity;
