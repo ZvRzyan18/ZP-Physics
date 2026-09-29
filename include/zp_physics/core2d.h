@@ -41,11 +41,11 @@
 typedef struct {
  struct {
   size_t    _broadphase_stack_bytes_inital_reserve;
+  size_t    _bodies_initial_reserve;
+  size_t    _joints_initial_reserve;
+  size_t    _contacts_initial_reserve;
+  size_t    _max_buckets_initial_reserve;
   float     _growth_base_rate;
-  uint16_t  _bodies_initial_reserve;
-  uint16_t  _joints_initial_reserve;
-  uint16_t  _contacts_initial_reserve;
-  uint16_t  _max_buckets_initial_reserve;
  } _memory;
  
  struct {
@@ -71,15 +71,26 @@ typedef struct {
  zp_vec2  _position;
  zp_vec2  _velocity;
  zp_vec2  _force;
- zp_vec2  _half_size;
- float    _linear_damping;
+ 
  float    _rotation;
  float    _omega;
  float    _torque;
- float    _density;
- float    _angular_damping;
- float    _restitution;
- float    _friction;
+ 
+ struct {
+  float    _density;
+  float    _linear_damping;
+  float    _angular_damping;
+  float    _restitution;
+  float    _dynamic_friction;
+  float    _static_friction;
+ } _material;
+
+ union {
+  struct {
+   zp_vec2  _half_size;
+  } _box;
+ } _shape;
+
 } zp_create_body2d;
 
 

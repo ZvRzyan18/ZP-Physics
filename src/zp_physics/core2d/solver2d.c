@@ -205,7 +205,8 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
  float a_omega = body_a->_head._omega;
  float a_inv_mass = body_a->_head._inv_mass;
  float a_inv_inertia = body_a->_head._inv_inertia;
- float a_friction = body_a->_head._friction;
+ float a_dynamic_friction = body_a->_head._dynamic_friction;
+ float a_static_friction = body_a->_head._static_friction;
 
  zp_compiler_memory_barrier();
 
@@ -213,10 +214,12 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
  float b_omega = body_b->_head._omega;
  float b_inv_mass = body_b->_head._inv_mass;
  float b_inv_inertia = body_b->_head._inv_inertia;
- float b_friction = body_b->_head._friction;
+ float b_dynamic_friction = body_b->_head._dynamic_friction;
+ float b_static_friction = body_b->_head._static_friction;
 
 
- float friction = zp_sqrt(a_friction * b_friction); 
+ float dynamic_friction = zp_sqrt(a_dynamic_friction * b_dynamic_friction); 
+ float static_friction = zp_sqrt(a_static_friction * b_static_friction);
  
  zp_vec2 r1, r2;
  zp_vec2 va, vb;
@@ -299,16 +302,32 @@ void zp_manifold2d_soft_solve_contact(zp_manifold2d *const zp_restrict m, void *
 	 
 		float vt = zp_dot2(relative_vel, tangent);
  	j = contact->_mass_tangent * -vt;
-
-
-		float friction_range = friction * contact->_accumulated_normal;
+/*
+  (void)static_friction;
+		float friction_range = dynamic_friction * contact->_accumulated_normal;
 
   {
 	 	float prev_tangent = contact->_accumulated_tangent;
 	 	contact->_accumulated_tangent = zp_min(zp_max(prev_tangent + j, -friction_range), friction_range);
 		 j = contact->_accumulated_tangent - prev_tangent;
   }
-  
+*/
+
+  float dynamic_limit = dynamic_friction * contact->_accumulated_normal;
+  float static_limit = static_friction * contact->_accumulated_normal;
+  {
+   float prev_tangent = contact->_accumulated_tangent;
+   float target_tangent = prev_tangent + j;
+
+   if(zp_abs(target_tangent) > static_limit) {
+    contact->_accumulated_tangent = zp_min(zp_max(target_tangent, -dynamic_limit), dynamic_limit);
+   } else {
+    contact->_accumulated_tangent = target_tangent;
+   }
+   j = contact->_accumulated_tangent - prev_tangent;
+  }
+
+
   impulse = zp_mul2(zp_stv2(j), tangent);
  	a_velocity = zp_sub2(a_velocity, zp_mul2(zp_stv2(a_inv_mass), impulse));
 	 a_omega -= a_inv_inertia * zp_cross2(r1, impulse);

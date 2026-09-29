@@ -98,29 +98,33 @@ edges
       3
 */
 zp_noinline static void obb_get_inc_edge(const zp_vec2 half_size, const zp_mat3x3 transform, const uint8_t index, zp_vec2 edge[2]) {
- zp_vec2 aa = zp_mul2(zp_load2(transform.v[0]), half_size);
- zp_vec2 bb = zp_mul2(zp_load2(transform.v[1]), half_size);
+ zp_vec2 aa = zp_mul2(zp_load2(transform.v[0]), zp_stv2(half_size.x));
+ zp_vec2 bb = zp_mul2(zp_load2(transform.v[1]), zp_stv2(half_size.y));
  zp_vec2 cc = zp_load2(transform.v[2]);
 
  switch(index) {
   case 0: /* right */
-   edge[0] = zp_add2(zp_add2(cc, aa), bb);
-   edge[1] = zp_sub2(zp_add2(cc, aa), bb);
+   edge[0] = zp_add2(zp_add2(cc, aa), bb); /* top-right */ 
+   edge[1] = zp_sub2(zp_add2(cc, aa), bb); /* bottom-right */
   break;
   case 1: /* top */
-   edge[0] = zp_add2(zp_add2(cc, aa), bb);
-   edge[1] = zp_add2(zp_sub2(cc, aa), bb);
+   edge[0] = zp_add2(zp_sub2(cc, aa), bb); /* top-left */
+   edge[1] = zp_add2(zp_add2(cc, aa), bb); /* top-right */
   break;
   case 2: /* left */
-   edge[0] = zp_add2(zp_sub2(cc, aa), bb);
-   edge[1] = zp_sub2(zp_sub2(cc, aa), bb);
+   edge[0] = zp_sub2(zp_sub2(cc, aa), bb); /* bottom-left */
+   edge[1] = zp_add2(zp_sub2(cc, aa), bb); /* top-left */
   break;
   case 3: /* bottom */
-   edge[0] = zp_sub2(zp_add2(cc, aa), bb);
-   edge[1] = zp_sub2(zp_sub2(cc, aa), bb);
+   edge[0] = zp_sub2(zp_add2(cc, aa), bb); /* bottom-right */
+   edge[1] = zp_sub2(zp_sub2(cc, aa), bb); /* bottom-left */
   break;
  }
 }
+
+
+
+
 /*
      •
     /  \--------> incident box
@@ -136,7 +140,7 @@ zp_noinline static void obb_get_inc_edge(const zp_vec2 half_size, const zp_mat3x
   •--------•
      
 */
-zp_noinline static uint8_t obb_clip_edge(zp_vec2 edge[2], const zp_vec2 normal, const float offset, const uint16_t edge_id, zp_contact2d_id ids[2]) {
+zp_noinline static uint8_t obb_clip_edge(zp_vec2 edge[2], const zp_vec2 normal, const float offset, const uint8_t edge_id, zp_contact2d_id ids[2]) {
  const float da = zp_dot2(normal, edge[0]) - offset;
  const float db = zp_dot2(normal, edge[1]) - offset;
  uint8_t poly_size = 0;
@@ -145,41 +149,42 @@ zp_noinline static uint8_t obb_clip_edge(zp_vec2 edge[2], const zp_vec2 normal, 
  
  const float c_epsilon = 1e-3f;
 
- if(da < c_epsilon) {
- 	out_edge[poly_size] = edge[0];
- 	out_ids[poly_size] = ids[0];
- 	poly_size++;
+ if (da < c_epsilon) {
+  out_edge[poly_size] = edge[0];
+  out_ids[poly_size] = ids[0];
+  poly_size++;
  }
- if(db < c_epsilon) {
+ if (db < c_epsilon) {
   out_edge[poly_size] = edge[1];
   out_ids[poly_size] = ids[1];
   poly_size++;
  }
  
- if((da * db) < 0.0f && poly_size < 2) {
+ if ((da * db) < 0.0f && poly_size < 2) {
   zp_vec2 t = zp_stv2(db / (db - da));
   out_edge[poly_size] = zp_fma2(zp_sub2(edge[0], edge[1]), t, edge[1]);
 
   zp_contact2d_id intersection_id;
-  if(da > 0.0f) {
-   intersection_id.value = ids[0].value;
+  if (da > 0.0f) {
+   intersection_id = ids[0];
    intersection_id.in_edge1 = edge_id;
-   intersection_id.in_edge2 = 0xF;
+   intersection_id.in_edge2 = ids[0].in_edge2; 
   } else {
-   intersection_id.value = ids[1].value;
+   intersection_id = ids[1];
    intersection_id.out_edge1 = edge_id;
-   intersection_id.out_edge2 = 0xF;
+   intersection_id.out_edge2 = ids[1].out_edge2;
   }
   out_ids[poly_size] = intersection_id;
-		poly_size++;
+  poly_size++;
  }
- assert(poly_size <= 2); 
+ 
  edge[0] = out_edge[0];
  edge[1] = out_edge[1];
  ids[0] = out_ids[0];
  ids[1] = out_ids[1];
  return poly_size;
 }
+
 
 /*
  Real-Time Collision Detection by Christer Ericson
@@ -302,9 +307,22 @@ uint8_t zp_manifold2d_box_vs_box(zp_manifold2d *const zp_restrict out, const zp_
  ids[1].out_edge1 = BOX_PERP_SIDE[tmp_ref_index][1];
 
 
-
+/*
  uint8_t flip = zp_dot2(ref_axis, zp_load2(inc_transform.v[inc_index])) > 0.0f;
  uint8_t inc_edge_index = inc_index + (flip ? 2 : 0);
+ */
+ float d0 = zp_dot2(ref_axis, zp_load2(inc_transform.v[0]));
+ float d1 = zp_dot2(ref_axis, zp_load2(inc_transform.v[1]));
+ uint8_t flip;
+ if(zp_abs(d0) > zp_abs(d1)) {
+  inc_index = 0;
+  flip = d0 > 0.0f;
+ } else {
+  inc_index = 1;
+  flip = d1 > 0.0f;
+ }
+ uint8_t inc_edge_index = inc_index + (flip ? 2 : 0);
+
  
  ids[0].in_edge2 = BOX_PERP_SIDE[inc_edge_index][0];
  ids[0].out_edge2 = inc_edge_index;

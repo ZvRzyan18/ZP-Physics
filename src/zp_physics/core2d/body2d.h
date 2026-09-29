@@ -30,7 +30,8 @@ typedef struct {
  float            _inv_inertia;
  float            _inv_mass;
  float            _restitution;
- float            _friction;
+ float            _dynamic_friction;
+ float            _static_friction;
  float            _idle_time;
  
  zp_pool_id       _aabb_node;
