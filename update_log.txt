@@ -1,3 +1,15 @@
+# version 0.1.1
+
+• fix rewinding issue inside of collision detection code
+
+• add dynamic friction and static friction
+
+• expose material components
+
+• expose per body components
+
+• change initial reserve type from uint16_t into size_t
+
 # version 0.1.0
 
 • upload updated files
