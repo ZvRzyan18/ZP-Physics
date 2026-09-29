@@ -51,18 +51,22 @@ zp_hot zp_inline void update_aabb(zp_body2d *const zp_restrict body) {
 
 zp_cold zp_noinline static void init_box(zp_box2d *const zp_restrict body, const zp_create_body2d *const zp_restrict data) {
  body->_head._flags = data->_flags;
- body->_half_size = data->_half_size;
+ 
+ body->_half_size = data->_shape._box._half_size;
+ 
  body->_head._position = data->_position;
  body->_head._velocity = data->_velocity;
  body->_head._force = data->_force;
  body->_head._rotation = zp_crotate(data->_rotation);
- body->_head._linear_damping = zp_log2(data->_linear_damping);
  body->_head._omega = data->_omega;
  body->_head._torque = data->_torque;
- body->_head._angular_damping = zp_log2(data->_angular_damping);
- body->_head._restitution = data->_restitution;
- body->_head._friction = data->_friction;
  
+ body->_head._linear_damping = zp_log2(data->_material._linear_damping);
+ body->_head._angular_damping = zp_log2(data->_material._angular_damping);
+ body->_head._restitution = data->_material._restitution;
+ body->_head._dynamic_friction = data->_material._dynamic_friction;
+ body->_head._static_friction = data->_material._static_friction;
+   
  update_aabb((zp_body2d*)body);
 
  switch(data->_flags & ZP_BODY_MOVEMENT_MASK_2D) {
@@ -70,7 +74,7 @@ zp_cold zp_noinline static void init_box(zp_box2d *const zp_restrict body, const
   {
    float mx = body->_half_size.x + body->_half_size.x;
    float my = body->_half_size.y + body->_half_size.y;
-   float mass = mx * my * data->_density;
+   float mass = mx * my * data->_material._density;
    body->_head._inv_mass = 1.0f / mass;
    body->_head._inv_inertia = 1.0f / (mass * (mx * mx + my * my) / 12.0f);
   }

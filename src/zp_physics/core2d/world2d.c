@@ -22,26 +22,27 @@ static void collision_query(zp_container_id a, zp_container_id b, void *ptr) {
 
 	zp_manifold2d m, *m1;
 	uint8_t intersect = 0;
-	memset(&m, 0, sizeof(zp_manifold2d));
 	zp_contacthash2d_get(&world->_contacts, body_a->_head._id, body_b->_head._id, &m1);
 
 	if(zp_body2d_psleep(body_a) && zp_body2d_psleep(body_b)) {
 	 if(m1 != NULL) {
-	  if(m1->_coherent > 3) {
+	  if(m1->_coherent > 4) {
 	   m1->_coherent = 0;
 	  } else {
 	   m1->_queried = 1;
 	   m1->_coherent++;
-	   return;
+		  return;
 	  }
 	 }
 	}
 
 	/* the manifold already exist, use combine instead of full insert */
 	if(m1 != NULL) {
+		memset(&m, 0, sizeof(zp_manifold2d));
 	 intersect = zp_collision2d_collide(&m, body_a, body_b);
 		if(intersect) {
 			zp_manifold2d_combine(m1, &m);
+		 zp_manifold2d_soft_prepare_contact(m1, (void*)world, &world->_solver_input);
 			m1->_queried = 1;		
 		} else {
 		 m1->_queried = 0;
@@ -49,9 +50,11 @@ static void collision_query(zp_container_id a, zp_container_id b, void *ptr) {
 	
 	} else { 
 	 /* the manifold did not exist, insert */
+		memset(&m, 0, sizeof(zp_manifold2d));
   intersect = zp_collision2d_collide(&m, body_a, body_b);
 		if(intersect) {
 			m._queried = 1;
+		 zp_manifold2d_soft_prepare_contact(&m, (void*)world, &world->_solver_input);
 			zp_contacthash2d_insert(&world->_contacts, &m);
 		}
 	}
@@ -103,7 +106,6 @@ zp_hot void update_world(zp_world2d *const zp_restrict world, const float dt) {
 			zp_prefetch(manifold);
    if(manifold->_queried) {
     manifold->_queried = 0;
-    zp_manifold2d_soft_prepare_contact(manifold, (void*)world, &world->_solver_input);
     zp_manifold2d_soft_presolve_contact(manifold, (void*)world, &world->_solver_input);
     i++;
    } else {
@@ -126,7 +128,6 @@ zp_hot void update_world(zp_world2d *const zp_restrict world, const float dt) {
 			zp_body2d_updatep(body_a, world, devided_dt);
 		 zp_broadphase2d_update_element(&world->_broadphase, body_a->_head._aabb_node, body_a->_head._fit_aabb);
 		}
-
  size_t pipeline_substeps = world->_time_substeps - 1;
 
 	for(uint8_t aa = 0; aa < pipeline_substeps; aa++)	{
@@ -134,7 +135,6 @@ zp_hot void update_world(zp_world2d *const zp_restrict world, const float dt) {
 			zp_contacthash2d_node *const node = ((zp_contacthash2d_node*)world->_contacts._memory_pool._bytes) + i;
 			zp_manifold2d *const manifold = &node->_value;
    zp_prefetch(manifold);
-	  zp_manifold2d_soft_prepare_contact(manifold, (void*)world, &world->_solver_input);
 			zp_manifold2d_soft_presolve_contact(manifold, (void*)world, &world->_solver_input);
 		}
 		for(size_t substeps = 0; substeps < world->_solver_substeps; substeps++) {
