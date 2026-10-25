@@ -5,7 +5,7 @@ NOTE : This engine is still currently unstable.
 
 ![My Image](sample.jpg)
 
-# version 0.1.0
+# version 0.1.1
  see [update_log.txt](https://github.com/ZvRzyan18/Z-Physics/blob/main/update_log.txt)
 
 
