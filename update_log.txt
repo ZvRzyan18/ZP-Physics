@@ -1,5 +1,19 @@
 # version 0.1.1
 
+• implement color graph for later multi thread feature.
+
+• add fully workable cmake build system
+
+• add unit tests
+
+• improve the pool eithout relying on pre allocated values
+
+• improve the container eithout relying on pre allocated values
+
+• make the vector and matrix math fully simd
+
+• refactor the entire physics engine
+
 • fix rewinding issue inside of collision detection code
 
 • add dynamic friction and static friction
@@ -9,6 +23,12 @@
 • expose per body components
 
 • change initial reserve type from uint16_t into size_t
+
+• agressive zeroing velocity to minimize positional drift
+
+• remove temporal coherence update of manifold
+
+• allow rigid bodies to completely skip the simulation if they are sleeping
 
 # version 0.1.0
 
