@@ -1,0 +1,143 @@
+#include "pool.h"
+#include "oxb1tz/pool.h"
+
+#ifdef OXB_TEST
+
+
+typedef struct test_allocation test_allocation;
+struct test_allocation {
+ void*            _ptr;
+ size_t           _size;
+ test_allocation* _next;
+};
+
+static test_allocation* allocations = NULL;
+
+static size_t total_allocations = 0;
+static size_t total_frees = 0;
+static size_t current_bytes = 0;
+static size_t highest_bytes = 0;
+
+static void* debug_malloc(size_t size) {
+ void* ptr = malloc(size);
+
+ if(!ptr) {
+  assert(0 && "failed alloc.");
+  return NULL;
+ }
+
+ test_allocation* record = (test_allocation*)malloc(sizeof(test_allocation));
+
+ if(!record) {
+  free(ptr);
+  assert(0);
+  return NULL;
+ }
+ record->_ptr = ptr;
+ record->_size = size;
+ record->_next = allocations;
+ allocations = record;
+
+ ++total_allocations;
+ current_bytes += size;
+
+ if(current_bytes > highest_bytes) {
+  highest_bytes = current_bytes;
+ }
+ return ptr;
+}
+
+static void debug_free(void* ptr) {
+ if(!ptr) {
+  assert(0 && "null free.");
+  return;
+ }
+
+ test_allocation** link = &allocations;
+
+ while(*link && (*link)->_ptr != ptr) {
+  link = &(*link)->_next;
+ }
+
+ if(!*link) {
+  assert(0 && "invalid memory pointer.");
+  return;
+ }
+
+ test_allocation* record = *link;
+ *link = record->_next;
+
+ current_bytes -= record->_size;
+ ++total_frees;
+
+ free(record->_ptr);
+ free(record);
+}
+
+static void debug_malloc_report() {
+ printf("<<--     MEMORY    -->>\n");
+ printf("total_allocations : %zu\n", total_allocations);
+ printf("total_frees       : %zu\n", total_frees);
+ printf("current bytes     : %zu\n", current_bytes);
+ printf("highest_bytes     : %zu\n", highest_bytes);
+
+ test_allocation* record = allocations;
+ while(record) {
+  printf("[LEAK] : ptr=%p size=%zu bytes\n", record->_ptr, record->_size);
+  record = record->_next;
+ }
+}
+
+
+
+void oxb_pool_test() {
+ oxb_allocator alloc;
+ alloc._alloc = debug_malloc;
+ alloc._free = debug_free;
+ alloc._alignment = 16;
+ 
+ oxb_pool test;
+ oxb_pool_create(&test, &alloc, sizeof(int), 1);
+ printf("--acquire test\n");
+ oxb_pool_id ids[100];
+ for(int i = 0; i < 100; i++) {
+  ids[i] = oxb_pool_acquire(&test);
+  int *v = (int*)oxb_pool_get(&test, ids[i]);
+  *v = i;
+ }
+
+
+ printf("--get test\n");
+ for(int i = 0; i < 100; i++) {
+  int *v = (int*)oxb_pool_get(&test, ids[i]);
+  assert(*v == i);
+ }
+ 
+ 
+ printf("--release test\n");
+ //release first half
+ for(int i = 0; i < 50; i++) {
+  oxb_pool_release(&test, ids[i]);
+ }
+
+ //make sure that the elements inside are not corrupted
+ for(int i = 50; i < 100; i++) {
+  int *v = (int*)oxb_pool_get(&test, ids[i]);
+  assert(*v == i);
+ }
+ 
+ //release the second half
+ for(int i = 50; i < 100; i++) {
+  oxb_pool_release(&test, ids[i]);
+ }
+
+
+ //destroy
+ oxb_pool_destroy(&test);
+ 
+ 
+ debug_malloc_report();
+}
+
+#endif
+
