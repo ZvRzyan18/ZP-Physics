@@ -3,7 +3,6 @@
 
 #include "oxb1tz/hint.h"
 #include "oxb1tz/types.h"
-#include <assert.h>
 
 typedef struct {
  oxb_id _val;

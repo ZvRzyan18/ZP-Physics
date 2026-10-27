@@ -2,7 +2,7 @@
 #define OXB_CONTAINER_H
 
 #include "oxb1tz/types.h"
-#include <assert.h>
+#include "oxb1tz/hint.h"
 
 typedef struct {
  oxb_id _val;

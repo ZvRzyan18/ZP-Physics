@@ -29,7 +29,7 @@ oxb_cold oxb_noinline static void resize(oxb_pool *oxb_restrict const pool) {
  new_pool._bytes = (uint8_t*)oxb_aligned_alloc(new_pool._allocator, free_list_size + bytes_size + new_pool._allocator->_alignment);
  if(oxb_unlikely(!new_pool._bytes)) {
   assert(0);
-  OXB_PANIC("pool allocation failed.");
+  OXB_PANIC("pool::resize() : allocation failed.");
  }
  new_pool._free_list = (oxb_pool_id*)oxb_alignto((uintptr_t)(new_pool._bytes) + bytes_size, new_pool._allocator->_alignment);
 
@@ -68,7 +68,7 @@ void oxb_pool_create(oxb_pool *oxb_restrict const pool, oxb_allocator *oxb_restr
  pool->_bytes = (uint8_t*)oxb_aligned_alloc(pool->_allocator, free_list_size + bytes_size + pool->_allocator->_alignment);
  if(oxb_unlikely(!pool->_bytes)) {
   assert(0);
-  OXB_PANIC("pool allocation failed.");
+  OXB_PANIC("oxb_pool_create() : allocation failed.");
  }
  
  pool->_free_list = (oxb_pool_id*)oxb_alignto((uintptr_t)(pool->_bytes) + bytes_size, pool->_allocator->_alignment);
