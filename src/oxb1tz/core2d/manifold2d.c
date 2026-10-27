@@ -43,8 +43,8 @@ void oxb_manifold2d_combine(oxb_manifold2d *oxb_restrict const out, const oxb_ma
 
 manifold_contact_func oxb_manifold2d_object_vs_object[2][2] =
 {
- {oxb_manifold2d_box_vs_box, oxb_manifold2d_circle_vs_box}, 
- {oxb_manifold2d_box_vs_circle, oxb_manifold2d_circle_vs_circle}
+ {oxb_manifold2d_box_vs_box, oxb_manifold2d_box_vs_circle}, 
+ {oxb_manifold2d_circle_vs_box, oxb_manifold2d_circle_vs_circle}
 };
 
 
@@ -129,6 +129,9 @@ static void obb_get_inc_edge(const oxb_vec2 half_size, const oxb_mat3x3 transfor
    edge[0] = oxb_vec2_sub(oxb_vec2_add(cc, aa), bb); /* bottom-right */
    edge[1] = oxb_vec2_sub(oxb_vec2_sub(cc, aa), bb); /* bottom-left */
   break;
+  default:
+   assert(0);
+   oxb_unreachable();
  }
 }
 
@@ -213,6 +216,8 @@ oxb_inline float obb_extent_size(const oxb_mat3x3 obj_t, const oxb_vec2 obj_hs, 
  instead of polygon, box treated as obb.
 */
 bool oxb_manifold2d_box_vs_box(oxb_manifold2d *oxb_restrict const out, const oxb_collider2d *oxb_restrict const a, const oxb_collider2d *oxb_restrict const b) {
+ assert((a->_flags & OXB_SHAPE_MASK_2D) == OXB_SHAPE_BOX_2D);
+ assert((b->_flags & OXB_SHAPE_MASK_2D) == OXB_SHAPE_BOX_2D);
  /* aabb early rejection */
  if((a->_aabb._max._arr[0] < b->_aabb._min._arr[0] || a->_aabb._min._arr[0] > b->_aabb._max._arr[0] || a->_aabb._max._arr[1] < b->_aabb._min._arr[1] || a->_aabb._min._arr[1] > b->_aabb._max._arr[1]))
   return false;
@@ -400,9 +405,10 @@ bool oxb_manifold2d_box_vs_box(oxb_manifold2d *oxb_restrict const out, const oxb
 
 
 
-
-
 bool oxb_manifold2d_box_vs_circle(oxb_manifold2d *oxb_restrict const out, const oxb_collider2d *oxb_restrict const a, const oxb_collider2d *oxb_restrict const b) {
+ assert((a->_flags & OXB_SHAPE_MASK_2D) == OXB_SHAPE_BOX_2D);
+ assert((b->_flags & OXB_SHAPE_MASK_2D) == OXB_SHAPE_CIRCLE_2D);
+
  /* aabb early rejection */
  if((a->_aabb._max._arr[0] < b->_aabb._min._arr[0] || a->_aabb._min._arr[0] > b->_aabb._max._arr[0] || a->_aabb._max._arr[1] < b->_aabb._min._arr[1] || a->_aabb._min._arr[1] > b->_aabb._max._arr[1]))
   return false;
@@ -430,19 +436,23 @@ bool oxb_manifold2d_box_vs_circle(oxb_manifold2d *oxb_restrict const out, const 
  float radius_squared = radius * radius;
  if(dist_squared > radius_squared)
   return false;
-  
+
+ /* sensor collision, no need manifold creation. */
+ if(a->_allocation._type == 3 || b->_allocation._type == 3)
+  return true;
+
  /* manifold generation */
  oxb_vec2 edge[2];
  oxb_vec2 extent_a = oxb_vec2_add(half_size, local);
  oxb_vec2 extent_b = oxb_vec2_sub(half_size, local);
- oxb_vec2 ref_axis = oxb_vec3_low(transform_a._basis[0]);
- 
+ oxb_vec2 ref_axis;
  float right  = oxb_vec2_getx(extent_b);
  float top    = oxb_vec2_gety(extent_b);
  float left   = oxb_vec2_getx(extent_a);
  float bottom = oxb_vec2_gety(extent_a);
  uint8_t facing_position = 0;
  float dir = right;
+ ref_axis = oxb_vec3_low(transform_a._basis[0]);
  if(dir > top) {
   /* facing top side */
   facing_position = 1;
@@ -463,11 +473,11 @@ bool oxb_manifold2d_box_vs_circle(oxb_manifold2d *oxb_restrict const out, const 
  } 
  
  /* calculate the edge of closest face*/
- obb_get_inc_edge(half_size, transform_a, dir, edge);
- 
+ obb_get_inc_edge(half_size, transform_a, facing_position, edge);
+
  oxb_vec2 dir_delta_a = oxb_vec2_sub(position_b, edge[0]);
  oxb_vec2 dir_delta_b = oxb_vec2_sub(position_b, edge[1]);
- 
+
  if(oxb_vec2_dot(dir_delta_a, dir_delta_a) < radius_squared && oxb_vec2_dot(dir_delta_b, dir_delta_b) < radius_squared) {
  	/* the obb is the reference and circle is incident */
  	/*
@@ -475,20 +485,19 @@ bool oxb_manifold2d_box_vs_circle(oxb_manifold2d *oxb_restrict const out, const 
  	 and the surface acts like flat plane the object will jitter
  	 because there is not enough contact point to support the standing
  	 box.
- 	*/
-
+ 	*/ 
   oxb_vec2 to_circle_a = oxb_vec2_sub(edge[0], position_b);
   oxb_vec2 to_circle_b = oxb_vec2_sub(edge[1], position_b);
 
- 	oxb_vec2 normal = oxb_vec2_neg(ref_axis);
+ 	oxb_vec2 normal = ref_axis;
  	oxb_contact2d *contact = out->_contacts;
   
   oxb_vec2_store(contact->_normal._arr, normal);
-  contact->_depth = radius - oxb_vec2_dot(to_circle_a, normal);
+  contact->_depth = oxb_vec2_dot(to_circle_a, normal) - radius;
 
   oxb_vec2_store(contact->_r1._arr, oxb_vec2_sub(edge[0], position_a));
   oxb_vec2_store(contact->_r2._arr, oxb_vec2_sub(edge[0], position_b));
-  contact->_id._in_edge1 = (facing_position - 1) & 3;
+  contact->_id._in_edge1 = BOX_PERP_SIDE[facing_position][0];
   contact->_id._out_edge1 = facing_position;
   contact->_id._in_edge2 = 0xF;
   contact->_id._out_edge2 = 0xF;
@@ -502,7 +511,7 @@ bool oxb_manifold2d_box_vs_circle(oxb_manifold2d *oxb_restrict const out, const 
   oxb_vec2_store(contact->_r1._arr, oxb_vec2_sub(edge[1], position_a));
   oxb_vec2_store(contact->_r2._arr, oxb_vec2_sub(edge[1], position_b));
   contact->_id._in_edge1 = facing_position;
-  contact->_id._out_edge1 = (facing_position + 1) & 3;
+  contact->_id._out_edge1 = BOX_PERP_SIDE[facing_position][1];
   contact->_id._in_edge2 = 0xF;
   contact->_id._out_edge2 = 0xF;
 
@@ -519,16 +528,18 @@ bool oxb_manifold2d_box_vs_circle(oxb_manifold2d *oxb_restrict const out, const 
   if(dist_squared > epsilon) {
    distance = oxb_sqrt(dist_squared);
    normal = oxb_vec2_mul(delta, oxb_vec2_splat(1.0f / distance));
-   normal = oxb_vec2_neg(normal);
   } else {
    /* use the box's facing normal */
    distance = epsilon;
-   normal = oxb_vec2_neg(ref_axis);
+   normal = ref_axis;
   }
+  normal = oxb_complex_mul(rotation_a, normal);
+  
   oxb_vec2_store(contact->_normal._arr, normal);
   contact->_depth = distance - radius;
 
   oxb_vec2 point = oxb_vec2_sub(position_b, oxb_vec2_mul(normal, oxb_vec2_splat(radius)));
+    
   oxb_vec2_store(contact->_r1._arr, oxb_vec2_sub(point, position_a));
   oxb_vec2_store(contact->_r2._arr, oxb_vec2_sub(point, position_b));
   contact->_id._value = 0xFFFF;
@@ -542,16 +553,17 @@ bool oxb_manifold2d_box_vs_circle(oxb_manifold2d *oxb_restrict const out, const 
 
 
 bool oxb_manifold2d_circle_vs_box(oxb_manifold2d *oxb_restrict const out, const oxb_collider2d *oxb_restrict const a, const oxb_collider2d *oxb_restrict const b) {
- bool r = oxb_manifold2d_box_vs_circle(out, a, b);
- for(size_t i = 0; i < out->_contact_count; i++) {
-  oxb_vec2 n = oxb_vec2_load(out->_contacts[i]._normal._arr);
-  oxb_vec2_store(out->_contacts[i]._normal._arr, oxb_vec2_neg(n));
- }
- return r;
+ assert((a->_flags & OXB_SHAPE_MASK_2D) == OXB_SHAPE_CIRCLE_2D);
+ assert((b->_flags & OXB_SHAPE_MASK_2D) == OXB_SHAPE_BOX_2D);
+
+ return oxb_manifold2d_box_vs_circle(out, b, a);
 }
 
 
 bool oxb_manifold2d_circle_vs_circle(oxb_manifold2d *oxb_restrict const out, const oxb_collider2d *oxb_restrict const a, const oxb_collider2d *oxb_restrict const b) {
+ assert((a->_flags & OXB_SHAPE_MASK_2D) == OXB_SHAPE_CIRCLE_2D);
+ assert((b->_flags & OXB_SHAPE_MASK_2D) == OXB_SHAPE_CIRCLE_2D);
+
  /* aabb early rejection */
  if((a->_aabb._max._arr[0] < b->_aabb._min._arr[0] || a->_aabb._min._arr[0] > b->_aabb._max._arr[0] || a->_aabb._max._arr[1] < b->_aabb._min._arr[1] || a->_aabb._min._arr[1] > b->_aabb._max._arr[1]))
   return false;
@@ -569,6 +581,10 @@ bool oxb_manifold2d_circle_vs_circle(oxb_manifold2d *oxb_restrict const out, con
  if(dist_squared > radius_sum * radius_sum)
   return false;
 
+ /* sensor collision, no need manifold creation. */
+ if(a->_allocation._type == 3 || b->_allocation._type == 3)
+  return true;
+
  /* manifold generation */
  float distance = oxb_sqrt(dist_squared);
 
@@ -585,6 +601,8 @@ bool oxb_manifold2d_circle_vs_circle(oxb_manifold2d *oxb_restrict const out, con
  out->_contacts[0]._depth = distance - radius_sum;
 
  oxb_vec2 point = oxb_vec2_add(position_a, oxb_vec2_mul(normal, oxb_vec2_splat(radius_a)));
+ 
+ 
  oxb_vec2_store(out->_contacts[0]._r1._arr, oxb_vec2_sub(point, position_a));
  oxb_vec2_store(out->_contacts[0]._r2._arr, oxb_vec2_sub(point, position_b));
 
