@@ -72,6 +72,10 @@ static void mat3x3_test() {
   }
   
   for(int i = 0; i < 9; i++) {
+  /*
+   if(fabsf(transposed1[i] - transposed[i]) < epsilon)
+    printf("%f, %f\n", transposed1[i], transposed[i]);
+   */
    assert(fabsf(transposed1[i] - transposed[i]) < epsilon);
   }
  }
