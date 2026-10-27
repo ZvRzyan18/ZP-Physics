@@ -17,7 +17,7 @@ struct oxb_world2d {
  
  uint32_t           _colors[32];
  uint32_t           _solo_manifolds;
- 
+ float              _dt;
  uint8_t            _substeps;
 };
 

@@ -15,6 +15,13 @@ oxb_noinline static oxb_aabb2d update_aabb(const oxb_packedshape2d shape, const 
    oxb_vec2_store(out._max._arr, oxb_vec2_add(pos, extents));
   }
   break;
+  case OXB_SHAPE_CIRCLE_2D:
+  {
+   oxb_vec2 extents = oxb_vec2_splat(shape._circle._radius);
+   oxb_vec2_store(out._min._arr, oxb_vec2_sub(pos, extents));
+   oxb_vec2_store(out._max._arr, oxb_vec2_add(pos, extents));
+  }
+  break;
   default:
    assert(0);
    oxb_unreachable();
@@ -48,14 +55,23 @@ void oxb_dynamic2d_init(oxb_dynamic2d *oxb_restrict const body, const oxb_object
  uint8_t shape_type = body->_flags & OXB_SHAPE_MASK_2D;
  switch(shape_type) {
   case OXB_SHAPE_BOX_2D:
+  {
    oxb_vec2_store(body->_shape._box._half_size._arr, info->_type._dynamic_body._shape._box._half_size);
    float mx = body->_shape._box._half_size._arr[0] + body->_shape._box._half_size._arr[0];
    float my = body->_shape._box._half_size._arr[1] + body->_shape._box._half_size._arr[1];
    float mass = mx * my * info->_type._dynamic_body._density;
    body->_inv_mass = 1.0f / mass;
    body->_inv_rotational_inertia = 1.0f / (mass * (mx * mx + my * my) / 12.0f);
+  }
   break;
   case OXB_SHAPE_CIRCLE_2D:
+  {
+   body->_shape._circle._radius = info->_type._dynamic_body._shape._circle._radius;
+   float area = 3.14159f * body->_shape._circle._radius * body->_shape._circle._radius;
+   float mass = area * info->_type._dynamic_body._density;
+   body->_inv_mass = 1.0f / mass;
+   body->_inv_rotational_inertia = 1.0f / (area * 0.5f);
+  }
   break;
   case OXB_SHAPE_CAPSULE_2D:
   break;
@@ -93,10 +109,10 @@ void oxb_dynamic2d_integrate(oxb_dynamic2d *oxb_restrict const body, oxb_vec2 gr
 
 
  float delta_omega = omega * dt;
- oxb_complex omega_complex = OXB_VEC2_INIT(1.0f, 0.0f);
  /* first order of taylor series */
- omega_complex = oxb_complex_setreal(omega_complex, 1.0f - 0.5f * delta_omega * delta_omega);
- omega_complex = oxb_complex_setimag(omega_complex, delta_omega);
+ float real = 1.0f - 0.5f * delta_omega * delta_omega;
+ float imag = delta_omega;
+ oxb_complex omega_complex = OXB_VEC2_INIT(real, imag);
 
  rotation = oxb_complex_mul(omega_complex, rotation);
  rotation = oxb_vec2_normalize(rotation);
@@ -154,9 +170,14 @@ void oxb_kinematic2d_init(oxb_kinematic2d *oxb_restrict const body, const oxb_ob
  uint8_t shape_type = body->_flags & OXB_SHAPE_MASK_2D;
  switch(shape_type) {
   case OXB_SHAPE_BOX_2D:
+  {
    oxb_vec2_store(body->_shape._box._half_size._arr, info->_type._kinematic_body._shape._box._half_size);
+  }
   break;
   case OXB_SHAPE_CIRCLE_2D:
+  {
+   body->_shape._circle._radius = info->_type._dynamic_body._shape._circle._radius;
+  }
   break;
   case OXB_SHAPE_CAPSULE_2D:
   break;
@@ -190,14 +211,14 @@ void oxb_kinematic2d_integrate(oxb_kinematic2d *oxb_restrict const body, const f
 
 
  float delta_omega = omega * dt;
- oxb_complex omega_complex = OXB_VEC2_INIT(1.0f, 0.0f);
  /* first order of taylor series */
- omega_complex = oxb_complex_setreal(omega_complex, 1.0f - 0.5f * delta_omega * delta_omega);
- omega_complex = oxb_complex_setimag(omega_complex, delta_omega);
+ float real = 1.0f - 0.5f * delta_omega * delta_omega;
+ float imag = delta_omega;
+ oxb_complex omega_complex = OXB_VEC2_INIT(real, imag);
 
  rotation = oxb_complex_mul(omega_complex, rotation);
  rotation = oxb_vec2_normalize(rotation);
-  
+ 
  position = oxb_vec2_fma(velocity, dt_vec, position);   
 
 
@@ -239,9 +260,14 @@ void oxb_static2d_init(oxb_static2d *oxb_restrict const body, const oxb_object2d
  uint8_t shape_type = body->_flags;
  switch(shape_type) {
   case OXB_SHAPE_BOX_2D:
+  {
    oxb_vec2_store(body->_shape._box._half_size._arr, info->_type._static_body._shape._box._half_size);
+  }
   break;
   case OXB_SHAPE_CIRCLE_2D:
+  {
+   body->_shape._circle._radius = info->_type._dynamic_body._shape._circle._radius;
+  }
   break;
   case OXB_SHAPE_CAPSULE_2D:
   break;

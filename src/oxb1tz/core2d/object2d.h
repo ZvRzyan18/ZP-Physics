@@ -23,6 +23,11 @@ typedef union {
  struct {
   float         _radius;
  } _circle;
+
+ struct {
+  float         _radius;
+  float         _length;
+ } _capsule;
 } oxb_packedshape2d;
 
 
