@@ -40,7 +40,6 @@ oxb_cold oxb_noinline static void resize(oxb_container *oxb_restrict const c) {
  uint8_t *ptr = (uint8_t*)oxb_aligned_alloc(new_container._allocator, luts_size + new_container._allocator->_alignment * 3);
 
  if(oxb_unlikely(!ptr)) {
-  assert(0);
   OXB_PANIC("container::resize() : allocation failed.");
  }
  
@@ -142,7 +141,6 @@ void oxb_container_create(oxb_container *oxb_restrict const c, oxb_allocator *ox
  uint8_t *ptr = (uint8_t*)oxb_aligned_alloc(allocator, luts_size + allocator->_alignment * 3);
  
  if(oxb_unlikely(!ptr)) {
-  assert(0);
   OXB_PANIC("oxb_container_create() : allocation failed.");
  }
   

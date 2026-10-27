@@ -19,18 +19,15 @@ oxb_hot void oxb_mat3x3_tofloat(float *oxb_restrict const arr, const oxb_mat3x3 
 oxb_hot oxb_mat3x3 oxb_mat3x3_transpose(const oxb_mat3x3 a) {
 #ifdef OXB_NEON
  oxb_mat3x3 out;
+
  float32x4_t c0 = a._basis[0];
  float32x4_t c1 = a._basis[1];
  float32x4_t c2 = a._basis[2];
-
  float32x4x2_t t = vtrnq_f32(c0, c1);
-
- out._basis[0] = vcombine_f32(vget_low_f32(t.val[0]), vdup_n_f32(0.0f));
- out._basis[0] = vsetq_lane_f32(vget_lane_f32(vget_low_f32(c2), 0), out._basis[0], 2);
- out._basis[1] = vcombine_f32(vget_low_f32(t.val[1]), vdup_n_f32(0.0f));
- out._basis[1] = vsetq_lane_f32(vget_lane_f32(vget_low_f32(c2), 1), out._basis[1], 2);
- out._basis[2] = vcombine_f32(vget_high_f32(t.val[0]), vdup_n_f32(0.0f));
- out._basis[2] = vsetq_lane_f32(vget_lane_f32(vget_high_f32(c2), 0), out._basis[2], 2);
+ float32x2_t zero = vdup_n_f32(0.0f);
+ out._basis[0] = vsetq_lane_f32(vgetq_lane_f32(c2, 0), vcombine_f32(vget_low_f32(t.val[0]), zero), 2);
+ out._basis[1] = vsetq_lane_f32(vgetq_lane_f32(c2, 1), vcombine_f32(vget_low_f32(t.val[1]), zero), 2);
+ out._basis[2] = vsetq_lane_f32(vgetq_lane_f32(c2, 2), vcombine_f32(vget_high_f32(t.val[0]), zero), 2);
 
  return out;
 #else

@@ -15,7 +15,6 @@ oxb_cold oxb_noinline static void resize(oxb_bump *oxb_restrict const bump, size
  new_bump._bytes = (uint8_t*)oxb_aligned_alloc(new_bump._allocator, new_bump._max_size);
 
  if(oxb_unlikely(!new_bump._bytes)) {
-  assert(0);
   OXB_PANIC("bump allocation failed.");
  }
 
@@ -35,7 +34,6 @@ void oxb_bump_create(oxb_bump *oxb_restrict const bump, oxb_allocator *oxb_restr
  bump->_max_size = reserve;
  bump->_bytes = (uint8_t*)oxb_aligned_alloc(bump->_allocator, bump->_max_size);
  if(oxb_unlikely(!bump->_bytes)) {
-  assert(0);
   OXB_PANIC("bump allocation failed.");
  }
  assert((((uintptr_t)bump->_bytes) % bump->_allocator->_alignment) == 0);
