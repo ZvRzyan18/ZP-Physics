@@ -9,7 +9,7 @@ void* oxb_aligned_alloc(oxb_allocator *oxb_restrict const allocator, const size_
 	size_t padd = allocator->_alignment - 1 + sizeof(void*);
  p1 = allocator->_alloc(bytes_size + padd);
  if(oxb_unlikely(!p1)) {
-  OXB_PANIC("failed allocation.");
+  return NULL;
  }
  p2 = (void**)(oxb_alignto((uintptr_t)p1 + padd, allocator->_alignment));
  p2[-1] = p1;
@@ -20,7 +20,7 @@ void* oxb_aligned_alloc(oxb_allocator *oxb_restrict const allocator, const size_
 */
 void oxb_aligned_free(oxb_allocator *oxb_restrict const allocator, void *oxb_restrict const ptr) {
  if(oxb_unlikely(!ptr)) {
-  OXB_PANIC("null deallocation.");
+  OXB_PANIC("oxb_aligned_free() : null deallocation.");
  }
  allocator->_free(((void**)ptr)[-1]);
 }

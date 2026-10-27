@@ -33,7 +33,6 @@ add_library(oxb1tz
 target_compile_options(oxb1tz PRIVATE
 #release
  $<$<COMPILE_LANGUAGE:C>: -DOXB_BUILD -Wall -ffast-math -Wextra -Werror -O3 -fvectorize -std=c11>
-  
 #just default, no optimization
 # $<$<COMPILE_LANGUAGE:C>: -DOXB_BUILD -O0>
 )

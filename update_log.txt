@@ -1,5 +1,21 @@
 # version 0.1.1
 
+• add collision for 2d circle
+
+• add shape and mass/moment of inertia for circle shape
+ 
+• add addforce 2d function
+
+• add addtorque 2d function
+
+• add set data
+
+• improve error message 
+
+• re arrange the rotation integration code
+
+• use enum to identify pool2d types
+
 • implement color graph for later multi thread feature.
 
 • add fully workable cmake build system

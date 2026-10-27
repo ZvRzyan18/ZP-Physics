@@ -1,7 +1,6 @@
 #include "oxb1tz/core2d/bvh2d.h"
 #include "oxb1tz/memory.h"
 #include "oxb1tz/math.h"
-#include <assert.h>
 
 /**********************************************
 *               AABB OPERATION                *
@@ -873,14 +872,14 @@ void oxb_bvh2d_mediansplit(oxb_bvh2d *oxb_restrict const bvh, oxb_pool2d *oxb_re
  bvh->_root = OXB_POOL_NULL_ID;
  
  /* TODO : add sensor */
- oxb_dynamic2d *dynamics = (oxb_dynamic2d *)pool2d->_containers[0]._bytes;
- const size_t dynamics_size = (size_t)pool2d->_containers[0]._size;
+ oxb_dynamic2d *dynamics = (oxb_dynamic2d *)pool2d->_containers[OXB_POOL2D_TYPE_DYNAMIC_2D]._bytes;
+ const size_t dynamics_size = (size_t)pool2d->_containers[OXB_POOL2D_TYPE_DYNAMIC_2D]._size;
 
- oxb_kinematic2d *kinematics = (oxb_kinematic2d*)pool2d->_containers[1]._bytes;
- const size_t kinematics_size = (size_t)pool2d->_containers[1]._size;
+ oxb_kinematic2d *kinematics = (oxb_kinematic2d*)pool2d->_containers[OXB_POOL2D_TYPE_KINEMATIC_2D]._bytes;
+ const size_t kinematics_size = (size_t)pool2d->_containers[OXB_POOL2D_TYPE_KINEMATIC_2D]._size;
 
- oxb_static2d *statics = (oxb_static2d*)pool2d->_containers[2]._bytes;
- const size_t statics_size = (size_t)pool2d->_containers[2]._size;
+ oxb_static2d *statics = (oxb_static2d*)pool2d->_containers[OXB_POOL2D_TYPE_STATIC_2D]._bytes;
+ const size_t statics_size = (size_t)pool2d->_containers[OXB_POOL2D_TYPE_STATIC_2D]._size;
 
 
  size_t total_size = dynamics_size + kinematics_size + statics_size;

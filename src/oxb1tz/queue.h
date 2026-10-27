@@ -2,6 +2,7 @@
 #define OXB_QUEUE_H
 
 #include "oxb1tz/types.h"
+#include "oxb1tz/hint.h"
 
 typedef struct {
  oxb_allocator *_allocator;

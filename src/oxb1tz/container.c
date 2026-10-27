@@ -1,8 +1,10 @@
 #include "oxb1tz/container.h"
 #include "oxb1tz/memory.h"
 #include "oxb1tz/math.h"
-#include <assert.h>
 
+#ifndef OXB_BUILD
+#error "the OXB_BUILD must be defined during build"
+#endif
 
 static_assert(sizeof(oxb_container_id) == sizeof(oxb_id), "not expected size");
 const oxb_container_id OXB_CONTAINER_NULL_ID = {._val = OXB_ID_MAX};
@@ -39,7 +41,7 @@ oxb_cold oxb_noinline static void resize(oxb_container *oxb_restrict const c) {
 
  if(oxb_unlikely(!ptr)) {
   assert(0);
-  OXB_PANIC("container allocation failed.");
+  OXB_PANIC("container::resize() : allocation failed.");
  }
  
  new_container._id_to_index = (oxb_container_id*)ptr;
@@ -141,7 +143,7 @@ void oxb_container_create(oxb_container *oxb_restrict const c, oxb_allocator *ox
  
  if(oxb_unlikely(!ptr)) {
   assert(0);
-  OXB_PANIC("container allocation failed.");
+  OXB_PANIC("oxb_container_create() : allocation failed.");
  }
   
  c->_id_to_index = (oxb_container_id*)ptr;

@@ -3,7 +3,8 @@
 
 #include "oxb1tz/types.h"
 #include "oxb1tz/math.h"
-#include <assert.h>
+#include "oxb1tz/hint.h"
+
 
 /**********************************************
 *                   Initializers

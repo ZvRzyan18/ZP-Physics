@@ -1,6 +1,5 @@
 #include "oxb1tz/queue.h"
 #include "oxb1tz/memory.h"
-#include <assert.h>
 
 static void resize(oxb_queue *oxb_restrict const c) {
  oxb_queue new_container;

@@ -20,7 +20,8 @@ oxb_noinline void broadphase_query(oxb_handle ha, oxb_handle hb, void *w) {
 
  oxb_manifold2d m;
  oxb_memory_set(&m, 0x00, sizeof(oxb_manifold2d));
- bool result = oxb_manifold2d_box_vs_box(&m, &a, &b);
+ //bool result = oxb_manifold2d_box_vs_box(&m, &a, &b);
+ bool result = oxb_manifold2d_object_vs_object[a._flags][b._flags](&m, &a, &b);
  if(!result)
   return;
 
@@ -51,7 +52,7 @@ oxb_func oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict co
  oxb_contacthash2d_create(&world->_contacts, &world->_allocator, 32);
  oxb_bvh2d_create(&world->_bvh2d, &world->_allocator, 32, 1024, 2.0f);
 
- world->_pool2d._bvh = (void*)&world->_bvh2d;
+ world->_pool2d._world = (void*)world;
  return world;
 }
 
@@ -70,7 +71,7 @@ oxb_func oxb_pool2d* oxb_world2d_getpool2d(oxb_world2d *oxb_restrict const world
 
 
 oxb_func void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const float dt) {
-
+ world->_dt = dt;
  float divided_dt = dt / (float)world->_substeps;
 
  if(oxb_bvh2d_shouldrebuild(&world->_bvh2d, 5)) 

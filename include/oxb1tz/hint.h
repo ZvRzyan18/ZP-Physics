@@ -8,13 +8,21 @@
 #define NDEBUG
 #endif
 
+#include <assert.h>
 
+/*
+ restrict keyword
+*/
 #ifdef __cplusplus
 #define oxb_restrict __restrict
 #else
 #define oxb_restrict restrict
 #endif
 
+
+/*
+ hints
+*/
 #if defined(__clang__) || defined(__GNUC__)
 
 #define oxb_likely(x)   __builtin_expect(!!(x), 1)
@@ -53,7 +61,10 @@
 #endif
 
 #else
-
+/*
+ fallback.
+ hints are just optional
+*/
 #define oxb_likely(x)
 #define oxb_unlikely(x)
 #define oxb_inline
@@ -70,6 +81,9 @@
 #endif
 
 
+/*
+ simd support
+*/
 #if defined(__ARM_NEON__) || defined(__ARM_NEON) && defined(OXB_SIMD)
 #include <arm_neon.h>
 #define OXB_NEON
@@ -88,7 +102,6 @@
 
 
 #ifdef OXB_TEST
-#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -99,12 +112,6 @@ extern "C" {
 extern void oxb_test();
 #ifdef __cplusplus
 }
-#endif
-
-
-
-#ifdef NDEBUG
-#undef NDEBUG
 #endif
 
 #endif
