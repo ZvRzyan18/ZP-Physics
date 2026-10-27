@@ -48,6 +48,7 @@ oxb_inline float oxb_vec2_get(const oxb_vec2 m, const size_t s) {
  oxb_unreachable();
  return oxb_nan(); /* return something to remove a warning */
 #else
+ assert(s < 2);
  return m._arr[s];
 #endif
 }
@@ -83,9 +84,10 @@ oxb_inline oxb_vec2 oxb_vec2_set(oxb_vec2 m, const size_t s, const float x) {
  oxb_unreachable();
  return oxb_vec2_splat(oxb_nan()); /* return something to remove a warning */
 #else
+ assert(s < 2);
  m._arr[s] = x;
-#endif
  return m;
+#endif
 }
 
 
@@ -362,6 +364,7 @@ oxb_inline float oxb_vec3_get(const oxb_vec3 m, const size_t s) {
  oxb_unreachable();
  return oxb_nan(); /* return something to remove a warning */
 #else
+ assert(s < 3);
  return m._arr[s];
 #endif
 }
@@ -408,9 +411,10 @@ oxb_inline oxb_vec3 oxb_vec3_set(oxb_vec3 m, const size_t s, const float x) {
  oxb_unreachable();
  return oxb_vec3_splat(oxb_nan()); /* return something to remove a warning */
 #else
+ assert(s < 3);
  m._arr[s] = x;
-#endif
  return m;
+#endif
 }
 
 
@@ -714,6 +718,7 @@ oxb_inline float oxb_vec4_get(const oxb_vec4 m, const size_t s) {
  oxb_unreachable();
  return oxb_nan(); /* return something to remove a warning */
 #else
+ assert(s < 4);
  return m._arr[s];
 #endif
 }
@@ -771,9 +776,10 @@ oxb_inline oxb_vec4 oxb_vec4_set(oxb_vec4 m, const size_t s, const float x) {
  oxb_unreachable();
  return oxb_vec4_splat(oxb_nan()); /* return something to remove a warning */
 #else
+ assert(s < 4);
  m._arr[s] = x;
-#endif
  return m;
+#endif
 }
 
 

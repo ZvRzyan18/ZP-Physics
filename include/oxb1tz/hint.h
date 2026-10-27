@@ -65,9 +65,9 @@
  fallback.
  hints are just optional
 */
-#define oxb_likely(x)
-#define oxb_unlikely(x)
-#define oxb_inline
+#define oxb_likely(x) (x)
+#define oxb_unlikely(x) (x)
+#define oxb_inline static inline
 #define oxb_noinline
 #define oxb_unreachable() 
 #define oxb_const 
@@ -84,7 +84,7 @@
 /*
  simd support
 */
-#if defined(__ARM_NEON__) || defined(__ARM_NEON) && defined(OXB_SIMD)
+#if (defined(__ARM_NEON__) || defined(__ARM_NEON)) && defined(OXB_SIMD)
 #include <arm_neon.h>
 #define OXB_NEON
 
