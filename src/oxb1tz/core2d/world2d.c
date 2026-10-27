@@ -6,6 +6,14 @@
 oxb_noinline void broadphase_query(oxb_handle ha, oxb_handle hb, void *w) {
  oxb_world2d *world = (oxb_world2d*)w;
 
+ oxb_collider2d a, b;
+ oxb_pool2d_collider(&world->_pool2d, &a, ha);
+ oxb_pool2d_collider(&world->_pool2d, &b, hb);
+
+ if((a._aabb._max._arr[0] < b._aabb._min._arr[0] || a._aabb._min._arr[0] > b._aabb._max._arr[0] || a._aabb._max._arr[1] < b._aabb._min._arr[1] || a._aabb._min._arr[1] > b._aabb._max._arr[1]))
+  return;
+
+
  oxb_contacthash2d_node *node = oxb_contacthash2d_get(&world->_contacts, ha, hb);
  
  /* skip duplicates */
@@ -14,17 +22,15 @@ oxb_noinline void broadphase_query(oxb_handle ha, oxb_handle hb, void *w) {
    return;
   }
  }
- oxb_collider2d a, b;
- oxb_pool2d_collider(&world->_pool2d, &a, ha);
- oxb_pool2d_collider(&world->_pool2d, &b, hb);
-
+ 
+ /* narrowphase */
  oxb_manifold2d m;
  oxb_memory_set(&m, 0x00, sizeof(oxb_manifold2d));
- //bool result = oxb_manifold2d_box_vs_box(&m, &a, &b);
+
  bool result = oxb_manifold2d_object_vs_object[a._flags][b._flags](&m, &a, &b);
  if(!result)
   return;
-
+ 
  if(result) {
   if(node == NULL) {
    m._flags |= OXB_MANIFOLD2D_QUERIED;
@@ -40,7 +46,6 @@ oxb_noinline void broadphase_query(oxb_handle ha, oxb_handle hb, void *w) {
 oxb_func oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict const info) {
  oxb_world2d *world = (oxb_world2d*)oxb_aligned_alloc((oxb_allocator*)&info->_allocator, sizeof(oxb_world2d));
  if(oxb_unlikely(!world)) {
-  assert(0);
   OXB_PANIC("oxb_world2d_create() : allocation failed. ");
  }
  oxb_memory_set(world, 0, sizeof(oxb_world2d));

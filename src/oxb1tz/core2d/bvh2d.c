@@ -43,23 +43,23 @@ oxb_inline bool contains(const oxb_aabb2d a, const oxb_aabb2d b) {
   a._max._arr[1] >= b._max._arr[1];
 }
 
-
+/*
 oxb_inline bool nearly_equal(const oxb_aabb2d a, const oxb_aabb2d b) {
- oxb_vec2 min_val_a = oxb_vec2_load(a._min._arr);
- oxb_vec2 max_val_a = oxb_vec2_load(a._max._arr);
+ oxb_vec2 min_a = oxb_vec2_load(a._min._arr);
+ oxb_vec2 max_a = oxb_vec2_load(a._max._arr);
 
- oxb_vec2 min_val_b = oxb_vec2_load(b._min._arr);
- oxb_vec2 max_val_b = oxb_vec2_load(b._max._arr);
- oxb_vec2 min_distance = oxb_vec2_abs(oxb_vec2_sub(min_val_a, min_val_b));
- oxb_vec2 max_distance = oxb_vec2_abs(oxb_vec2_sub(max_val_a, max_val_b));
- 
- const float epsilon = 1e-2f;
- return oxb_vec2_getx(min_distance) < epsilon && oxb_vec2_gety(min_distance) < epsilon
- && oxb_vec2_getx(max_distance) < epsilon && oxb_vec2_gety(max_distance) < epsilon;
+ oxb_vec2 min_b = oxb_vec2_load(b._min._arr);
+ oxb_vec2 max_b = oxb_vec2_load(b._max._arr);
+ oxb_vec2 extent_a = oxb_vec2_abs(oxb_vec2_sub(min_a, min_b));
+ oxb_vec2 extent_b = oxb_vec2_abs(oxb_vec2_sub(max_a, max_b));
+ const float epsilon = 1e-16f;
+ return oxb_vec2_getx(extent_a) < epsilon && oxb_vec2_gety(extent_a) < epsilon && oxb_vec2_getx(extent_b) < epsilon && oxb_vec2_gety(extent_b) < epsilon;
 }
+*/
 
 
 oxb_inline oxb_aabb2d expanded(const oxb_aabb2d a, float amount) {
+ assert(amount > 0.0f);
  oxb_aabb2d out;
  oxb_vec2 vector_amount = oxb_vec2_splat(amount);
  oxb_vec2 min_val_a = oxb_vec2_load(a._min._arr);
@@ -111,10 +111,16 @@ oxb_noinline static void refit_upwards(oxb_bvh2d *const bvh, oxb_pool_id n) {
    oxb_bvh2d_node *left = (oxb_bvh2d_node*)oxb_pool_get(&bvh->_pool, node_ptr->_left);
    oxb_bvh2d_node *right = (oxb_bvh2d_node*)oxb_pool_get(&bvh->_pool, node_ptr->_right);
    
-   /* idk if early skip can improve performance */
    oxb_aabb2d combined = combine(left->_aabb, right->_aabb);
-   if(nearly_equal(combined, node_ptr->_aabb))
+
+
+   if(combined._min._arr[0] == node_ptr->_aabb._min._arr[0]
+   && combined._min._arr[1] == node_ptr->_aabb._min._arr[1]
+   && combined._max._arr[0] == node_ptr->_aabb._max._arr[0]
+   && combined._max._arr[1] == node_ptr->_aabb._max._arr[1]
+   )
     return;
+    
    node_ptr->_aabb = combined;
    }
   node = node_ptr->_parent;
