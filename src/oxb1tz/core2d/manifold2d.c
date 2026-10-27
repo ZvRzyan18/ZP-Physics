@@ -528,12 +528,13 @@ bool oxb_manifold2d_box_vs_circle(oxb_manifold2d *oxb_restrict const out, const 
   if(dist_squared > epsilon) {
    distance = oxb_sqrt(dist_squared);
    normal = oxb_vec2_mul(delta, oxb_vec2_splat(1.0f / distance));
+   /* rotate because it is local */
+   normal = oxb_complex_mul(rotation_a, normal);
   } else {
    /* use the box's facing normal */
    distance = epsilon;
    normal = ref_axis;
   }
-  normal = oxb_complex_mul(rotation_a, normal);
   
   oxb_vec2_store(contact->_normal._arr, normal);
   contact->_depth = distance - radius;
