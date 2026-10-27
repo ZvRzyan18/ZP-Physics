@@ -1,5 +1,15 @@
 # version 0.1.1
 
+• move early rejection before hashmap query.
+
+• change bvh nearly equal to equal
+
+• near equal exit during bvh refit upwards, causes collision miss
+
+• update neon matrix 3x3 transpose
+
+• fix hint fallback error
+
 • add collision for 2d circle
 
 • add shape and mass/moment of inertia for circle shape

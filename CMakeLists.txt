@@ -32,7 +32,7 @@ add_library(oxb1tz
 #compiler optimization flags
 target_compile_options(oxb1tz PRIVATE
 #release
- $<$<COMPILE_LANGUAGE:C>: -DOXB_BUILD -Wall -ffast-math -Wextra -Werror -O3 -fvectorize -std=c11>
+ $<$<COMPILE_LANGUAGE:C>: -ffast-math -DOXB_BUILD -Wall -Wextra -Werror -O3 -std=c11>
 #just default, no optimization
-# $<$<COMPILE_LANGUAGE:C>: -DOXB_BUILD -O0>
+# $<$<COMPILE_LANGUAGE:C>: -ffast-math -DOXB_BUILD -O0>
 )
