@@ -207,7 +207,7 @@ static uint8_t obb_clip_edge(oxb_vec2 edge[2], const oxb_vec2 normal, const floa
 oxb_inline float obb_extent_size(const oxb_mat3x3 obj_t, const oxb_vec2 obj_hs, const oxb_vec2 axis) {
  float a = oxb_vec2_dot(axis, oxb_vec3_low(obj_t._basis[0]));
  float b = oxb_vec2_dot(axis, oxb_vec3_low(obj_t._basis[1]));
- oxb_vec2 tmp = oxb_vec2_make(a, b);
+ oxb_vec2 tmp = OXB_VEC2_INIT(a, b);
  return oxb_vec2_dot(obj_hs, oxb_vec2_abs(tmp));
 }
 
@@ -583,7 +583,7 @@ bool oxb_manifold2d_circle_vs_circle(oxb_manifold2d *oxb_restrict const out, con
  if(distance > epsilon) {
   normal = oxb_vec2_mul(delta, oxb_vec2_splat(1.0f / distance));
  } else {
-  normal = oxb_vec2_make(1.0f, 0.0f);
+  normal = OXB_VEC2_INIT(1.0f, 0.0f);
  }
  oxb_vec2_store(out->_contacts[0]._normal._arr, normal);
 

@@ -21,10 +21,10 @@ struct oxb_world2d {
  uint8_t            _substeps;
 };
 
-oxb_func oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict const info);
-oxb_func void oxb_world2d_destroy(oxb_world2d *oxb_restrict const world);
-oxb_func oxb_pool2d* oxb_world2d_getpool2d(oxb_world2d *oxb_restrict const world);
-oxb_func void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const float dt);
+oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict const info);
+void oxb_world2d_destroy(oxb_world2d *oxb_restrict const world);
+oxb_pool2d* oxb_world2d_getpool2d(oxb_world2d *oxb_restrict const world);
+void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const float dt);
 
 
 #endif
