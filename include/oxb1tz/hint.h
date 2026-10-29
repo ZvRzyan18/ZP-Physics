@@ -4,11 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef OXB_NDEBUG
+#include <assert.h>
+
+#if defined(OXB_NDEBUG) && !defined(NDEBUG)
 #define NDEBUG
 #endif
-
-#include <assert.h>
 
 /*
  restrict keyword
@@ -36,7 +36,6 @@
 #define oxb_cold __attribute__((cold))
 #define oxb_prefetch(v) __builtin_prefetch(v, 1, 3)
 #define oxb_compiler_memory_barrier() __asm__ volatile("" ::: "memory");
-#define oxb_func __attribute__((visibility("default")))
 
 #elif defined(_MSC_VER)
 #include <intrin.h>
@@ -54,12 +53,6 @@
 #define oxb_prefetch(v)
 #define oxb_compiler_memory_barrier() _ReadWriteBarrier()
 
-#ifdef OXB_BUID
-#define oxb_func __declspec(dllexport)
-#else
-#define oxb_func __declspec(dllimport)
-#endif
-
 #else
 /*
  fallback.
@@ -76,7 +69,6 @@
 #define oxb_cold 
 #define oxb_prefetch(v)
 #define oxb_compiler_memory_barrier() 
-#define oxb_func 
 
 #endif
 
@@ -101,10 +93,6 @@
 #endif
 
 
-#ifdef OXB_TEST
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -112,8 +100,6 @@ extern "C" {
 extern void oxb_test();
 #ifdef __cplusplus
 }
-#endif
-
 #endif
 
 

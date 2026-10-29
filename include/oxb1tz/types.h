@@ -34,6 +34,9 @@ typedef struct {
  simd padded matrices
 */
 typedef struct {
+ oxb_vec2 _basis[2];
+} oxb_mat2x2;
+typedef struct {
  oxb_vec3 _basis[3];
 } oxb_mat3x3;
 

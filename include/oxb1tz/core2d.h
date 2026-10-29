@@ -30,7 +30,8 @@ typedef enum {
  OXB_FLAG_LOCK_POSY_2D =   0b00000000000000000000000010000000,
  OXB_FLAG_LOCK_ROT_2D =    0b00000000000000000000000100000000,
  OXB_FLAG_SLEEP_2D =       0b00000000000000000000001000000000,
- OXB_FLAG_MASK_2D =        0b00000000000000000000001111000000,
+ OXB_FLAG_STILL_2D =       0b00000000000000000000010000000000,
+ OXB_FLAG_MASK_2D =        0b00000000000000000000011111000000,
 } oxb_flag_type2d;
 
 
@@ -114,19 +115,19 @@ extern "C" {
 
 
 
-oxb_func oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict const info);
-oxb_func void oxb_world2d_destroy(oxb_world2d *oxb_restrict const world);
-oxb_func oxb_pool2d* oxb_world2d_getpool2d(oxb_world2d *oxb_restrict const world);
-oxb_func void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const float dt);
+oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict const info);
+void oxb_world2d_destroy(oxb_world2d *oxb_restrict const world);
+oxb_pool2d* oxb_world2d_getpool2d(oxb_world2d *oxb_restrict const world);
+void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const float dt);
 
 
-oxb_func oxb_handle oxb_pool2d_acquire(oxb_pool2d *oxb_restrict const pool, const oxb_object2d_info *oxb_restrict const info);
-oxb_func void oxb_pool2d_release(oxb_pool2d *oxb_restrict const pool, const oxb_handle id);
-oxb_func void oxb_pool2d_getdata(oxb_pool2d *oxb_restrict const pool, oxb_object2d_data *oxb_restrict const dat, const oxb_handle id);
-oxb_func void oxb_pool2d_setdata(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const oxb_object2d_data *oxb_restrict const dat);
+oxb_handle oxb_pool2d_acquire(oxb_pool2d *oxb_restrict const pool, const oxb_object2d_info *oxb_restrict const info);
+void oxb_pool2d_release(oxb_pool2d *oxb_restrict const pool, const oxb_handle id);
+void oxb_pool2d_getdata(oxb_pool2d *oxb_restrict const pool, oxb_object2d_data *oxb_restrict const dat, const oxb_handle id);
+void oxb_pool2d_setdata(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const oxb_object2d_data *oxb_restrict const dat);
 
-oxb_func void oxb_pool2d_addforce(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const oxb_vec2 v);
-oxb_func void oxb_pool2d_addtorque(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const float v);
+void oxb_pool2d_addforce(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const oxb_vec2 v);
+void oxb_pool2d_addtorque(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const float v);
 
 
 #ifdef __cplusplus

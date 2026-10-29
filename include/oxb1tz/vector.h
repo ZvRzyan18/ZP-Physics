@@ -14,9 +14,9 @@
 #define OXB_VEC3_INIT(a, b, c) ((float32x4_t){a, b, c, 0.0f})
 #define OXB_VEC4_INIT(a, b, c, d) ((float32x4_t){a, b, c, d})
 #else
-#define OXB_VEC2_INIT(a, b) {._arr = {a, b}}
-#define OXB_VEC3_INIT(a, b, c) {._arr = {a, b, c}}
-#define OXB_VEC4_INIT(a, b, c, d) {._arr = {a, b, c, d}}
+#define OXB_VEC2_INIT(a, b) ((oxb_vec2){a, b})
+#define OXB_VEC3_INIT(a, b, c) ((oxb_vec3){a, b, c})
+#define OXB_VEC4_INIT(a, b, c, d) ((oxb_vec4){a, b, c, d})
 #endif
 
 
@@ -108,16 +108,6 @@ oxb_inline oxb_vec2 oxb_vec2_sety(const oxb_vec2 m, const float x) {
 #endif
 }
 
-oxb_inline oxb_vec2 oxb_vec2_make(const float x, const float y) {
-#ifdef OXB_NEON
- return (float32x2_t){x, y};
-#else
- oxb_vec2 out;
- out._arr[0] = x;
- out._arr[1] = y;
- return out;
-#endif
-}
 
 oxb_inline oxb_vec2 oxb_vec2_load(const float *const ptr) {
 #ifdef OXB_NEON
@@ -445,17 +435,6 @@ oxb_inline oxb_vec3 oxb_vec3_setz(const oxb_vec3 m, const float x) {
 }
 
 
-oxb_inline oxb_vec3 oxb_vec3_make(const float x, const float y, const float z) {
-#ifdef OXB_NEON
- return (float32x4_t){x, y, z, 0.0f};
-#else
- oxb_vec3 out;
- out._arr[0] = x;
- out._arr[1] = y;
- out._arr[2] = z;
- return out;
-#endif
-}
 
 oxb_inline oxb_vec3 oxb_vec3_load(const float *const ptr) {
 #ifdef OXB_NEON
@@ -537,7 +516,7 @@ static const uint32_t perm_tbl[4] = {
  return vreinterpretq_f32_u8(result);
 #endif
 #else
- return oxb_vec3_make(oxb_vec3_get(x, a), oxb_vec3_get(x, b), oxb_vec3_get(x, c));
+ return OXB_VEC3_INIT(oxb_vec3_get(x, a), oxb_vec3_get(x, b), oxb_vec3_get(x, c));
 #endif
 }
 
@@ -818,20 +797,6 @@ oxb_inline oxb_vec4 oxb_vec4_setw(const oxb_vec4 m, const float x) {
 }
 
 
-oxb_inline oxb_vec4 oxb_vec4_make(const float x, const float y, const float z, const float w) {
-#ifdef OXB_NEON
- return (float32x4_t){x, y, z, w};
-#else
- oxb_vec4 out;
- out._arr[0] = x;
- out._arr[1] = y;
- out._arr[2] = z;
- out._arr[3] = w;
- return out;
-#endif
-}
-
-
 oxb_inline oxb_vec4 oxb_vec4_load(const float *const ptr) {
 #ifdef OXB_NEON
  return vld1q_f32(ptr);
@@ -949,7 +914,7 @@ static const uint32_t perm_tbl[4] = {
  return vreinterpretq_f32_u8(result);
 #endif
 #else
- return oxb_vec4_make(oxb_vec4_get(x, a), oxb_vec4_get(x, b), oxb_vec4_get(x, c), oxb_vec4_get(x, d));
+ return OXB_VEC4_INIT(oxb_vec4_get(x, a), oxb_vec4_get(x, b), oxb_vec4_get(x, c), oxb_vec4_get(x, d));
 #endif
 }
 
