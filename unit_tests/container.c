@@ -2,6 +2,9 @@
 #include "oxb1tz/container.h"
 #include "oxb1tz/hint.h"
 
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef OXB_TEST
 

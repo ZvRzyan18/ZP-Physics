@@ -1,6 +1,10 @@
 #include "pool.h"
 #include "oxb1tz/pool.h"
 
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #ifdef OXB_TEST
 
 
