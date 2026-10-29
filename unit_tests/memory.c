@@ -1,5 +1,8 @@
 #include "memory.h"
 #include "oxb1tz/memory.h"
+
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #ifdef OXB_TEST

@@ -1,5 +1,7 @@
 #include "oxb1tz/complex.h"
 
+const oxb_complex oxb_complex_identity = OXB_VEC2_INIT(1.0f, 0.0f);
+
 /*
  src : https://en.wikipedia.org/wiki/Euler%27s_formula
  
@@ -70,7 +72,7 @@
 oxb_complex oxb_complex_rotate(const float a) {
  float s, c;
  oxb_sincos(a, &s, &c);
- return oxb_vec2_make(c, s);
+ return OXB_VEC2_INIT(c, s);
 }
 /*
  complex angle uses simplification (same tricks, to eliminate the logarithm)

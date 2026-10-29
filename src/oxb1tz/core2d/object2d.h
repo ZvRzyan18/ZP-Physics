@@ -41,6 +41,7 @@ typedef struct {
  oxb_packedv2f     _friction;
  oxb_handle        _allocation;
  oxb_pool_id       _bvh_id;
+ oxb_pool_id       _island_id;
  uint32_t          _color_bits;
  float             _omega;
  float             _inv_mass;

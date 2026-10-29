@@ -33,7 +33,6 @@ void oxb_aligned_free(oxb_allocator *oxb_restrict const allocator, void *oxb_res
  no need custom assembly functions.
 */
 #ifdef OXB_NEON
-
 /**********************************************
 *             arm64/arm32 optimized copy
 **********************************************/

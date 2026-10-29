@@ -43,7 +43,7 @@ oxb_noinline void broadphase_query(oxb_handle ha, oxb_handle hb, void *w) {
 }
 
 
-oxb_func oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict const info) {
+oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict const info) {
  oxb_world2d *world = (oxb_world2d*)oxb_aligned_alloc((oxb_allocator*)&info->_allocator, sizeof(oxb_world2d));
  if(oxb_unlikely(!world)) {
   OXB_PANIC("oxb_world2d_create() : allocation failed. ");
@@ -62,7 +62,7 @@ oxb_func oxb_world2d* oxb_world2d_create(const oxb_world2d_info *oxb_restrict co
 }
 
 
-oxb_func void oxb_world2d_destroy(oxb_world2d *oxb_restrict const world) {
+void oxb_world2d_destroy(oxb_world2d *oxb_restrict const world) {
  oxb_bvh2d_destroy(&world->_bvh2d);
  oxb_contacthash2d_destroy(&world->_contacts);
  oxb_pool2d_destroy(&world->_pool2d);
@@ -70,12 +70,12 @@ oxb_func void oxb_world2d_destroy(oxb_world2d *oxb_restrict const world) {
 }
 
 
-oxb_func oxb_pool2d* oxb_world2d_getpool2d(oxb_world2d *oxb_restrict const world) {
+oxb_pool2d* oxb_world2d_getpool2d(oxb_world2d *oxb_restrict const world) {
  return &world->_pool2d;
 }
 
 
-oxb_func void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const float dt) {
+void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const float dt) {
  world->_dt = dt;
  float divided_dt = dt / (float)world->_substeps;
 
@@ -87,14 +87,18 @@ oxb_func void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const floa
 
  float damping_ratio = 2.6f;
  float hertz = 9.33f;
+
+ float soft_dt = dt;
+ 
  float omega = hertz * 6.28318530f;
-	const float a1 = 2.0f * damping_ratio + omega * dt;
-	const float a2 = dt * omega * a1;
+  
+	const float a1 = 2.0f * damping_ratio + omega * soft_dt;
+	const float a2 = soft_dt * omega * a1;
 	const float a3 = 1.0f / (1.0f + a2);
 	world->_input._bias_coeff = omega / a1;
 	world->_input._mass_coeff = a2 * a3;
 	world->_input._impulse_coeff = a3;
-	world->_input._inv_dt = 1.0f / dt;
+	world->_input._inv_dt = 1.0f / soft_dt;
 	world->_input._ctx = (void*)world;
 
 
@@ -142,7 +146,7 @@ oxb_func void oxb_world2d_step(oxb_world2d *oxb_restrict const world, const floa
  	oxb_contacthash2d_node *node = ((oxb_contacthash2d_node*)world->_contacts._pool._bytes) + i;
   oxb_solver2d_contact_solve(&node->_manifold, &world->_pool2d, &world->_input);
  }
-
+ 
  } //iteration
 
 }

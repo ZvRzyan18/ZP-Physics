@@ -1,5 +1,8 @@
 #include "complex.h"
 #include "oxb1tz/complex.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef OXB_TEST
 oxb_inline float COMPLEX_TEST_RANDOM(float min, float max) {
@@ -21,8 +24,8 @@ void oxb_complex_test() {
   float tmp2 = COMPLEX_TEST_RANDOM(min_range, max_range);
   float tmp3 = COMPLEX_TEST_RANDOM(min_range, max_range);
 
-  oxb_complex a = oxb_vec2_make(tmp, tmp1);
-  oxb_complex b = oxb_vec2_make(tmp2, tmp3);
+  oxb_complex a = OXB_VEC2_INIT(tmp, tmp1);
+  oxb_complex b = OXB_VEC2_INIT(tmp2, tmp3);
   oxb_complex r = oxb_complex_mul(a, b);
   
   float real = tmp * tmp2 - tmp1 * tmp3;
@@ -38,7 +41,7 @@ void oxb_complex_test() {
   float tmp = COMPLEX_TEST_RANDOM(min_range, max_range);
   float tmp1 = COMPLEX_TEST_RANDOM(min_range, max_range);
 
-  oxb_complex r = oxb_vec2_make(tmp, tmp1);
+  oxb_complex r = OXB_VEC2_INIT(tmp, tmp1);
   r = oxb_complex_conj(r);
   
   float real = tmp;

@@ -2,10 +2,6 @@
 #include "oxb1tz/memory.h"
 #include "oxb1tz/math.h"
 
-#ifndef OXB_BUILD
-#error "the OXB_BUILD must be defined during build"
-#endif
-
 static_assert(sizeof(oxb_container_id) == sizeof(oxb_id), "not expected size");
 const oxb_container_id OXB_CONTAINER_NULL_ID = {._val = OXB_ID_MAX};
 

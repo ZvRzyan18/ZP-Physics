@@ -20,7 +20,7 @@ void oxb_pool2d_destroy(oxb_pool2d *oxb_restrict const pool) {
 }
 
 
-oxb_func oxb_handle oxb_pool2d_acquire(oxb_pool2d *oxb_restrict const pool, const oxb_object2d_info *oxb_restrict const info) {
+oxb_handle oxb_pool2d_acquire(oxb_pool2d *oxb_restrict const pool, const oxb_object2d_info *oxb_restrict const info) {
  size_t pool_index = (info->_flags & OXB_OBJECT_MASK_2D) >> 26;
  assert(pool_index < 3);
  oxb_container_id container_id = oxb_container_acquire(&pool->_containers[pool_index]);
@@ -67,7 +67,7 @@ oxb_func oxb_handle oxb_pool2d_acquire(oxb_pool2d *oxb_restrict const pool, cons
 }
 
 
-oxb_func void oxb_pool2d_release(oxb_pool2d *oxb_restrict const pool, const oxb_handle id) {
+void oxb_pool2d_release(oxb_pool2d *oxb_restrict const pool, const oxb_handle id) {
  assert(id._id < 5);
  oxb_container_id container_id;
  container_id._val = id._id;
@@ -99,7 +99,7 @@ oxb_func void oxb_pool2d_release(oxb_pool2d *oxb_restrict const pool, const oxb_
 }
 
 
-oxb_func void oxb_pool2d_getdata(oxb_pool2d *oxb_restrict const pool, oxb_object2d_data *oxb_restrict const dat, const oxb_handle id) {
+void oxb_pool2d_getdata(oxb_pool2d *oxb_restrict const pool, oxb_object2d_data *oxb_restrict const dat, const oxb_handle id) {
  switch(id._type) {
   case OXB_POOL2D_TYPE_DYNAMIC_2D:
   {
@@ -144,7 +144,7 @@ oxb_func void oxb_pool2d_getdata(oxb_pool2d *oxb_restrict const pool, oxb_object
 }
 
 
-oxb_func void oxb_pool2d_setdata(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const oxb_object2d_data *oxb_restrict const dat) {
+void oxb_pool2d_setdata(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const oxb_object2d_data *oxb_restrict const dat) {
  switch(id._type) {
   case OXB_POOL2D_TYPE_DYNAMIC_2D:
   {
@@ -187,7 +187,7 @@ oxb_func void oxb_pool2d_setdata(oxb_pool2d *oxb_restrict const pool, const oxb_
 }
 
 
-oxb_func void oxb_pool2d_addforce(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const oxb_vec2 v) {
+void oxb_pool2d_addforce(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const oxb_vec2 v) {
  oxb_world2d *world = (oxb_world2d*)pool->_world;
 
  switch(id._type) {
@@ -219,7 +219,7 @@ oxb_func void oxb_pool2d_addforce(oxb_pool2d *oxb_restrict const pool, const oxb
 }
 
 
-oxb_func void oxb_pool2d_addtorque(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const float v) {
+void oxb_pool2d_addtorque(oxb_pool2d *oxb_restrict const pool, const oxb_handle id, const float v) {
  oxb_world2d *world = (oxb_world2d*)pool->_world;
 
  switch(id._type) {

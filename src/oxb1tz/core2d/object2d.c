@@ -70,7 +70,9 @@ void oxb_dynamic2d_init(oxb_dynamic2d *oxb_restrict const body, const oxb_object
    float area = 3.14159f * body->_shape._circle._radius * body->_shape._circle._radius;
    float mass = area * info->_type._dynamic_body._density;
    body->_inv_mass = 1.0f / mass;
-   body->_inv_rotational_inertia = 1.0f / (area * 0.5f);
+   
+   float inertia = 0.5f * mass * body->_shape._circle._radius * body->_shape._circle._radius;
+   body->_inv_rotational_inertia = 1.0f / inertia;
   }
   break;
   case OXB_SHAPE_CAPSULE_2D:
