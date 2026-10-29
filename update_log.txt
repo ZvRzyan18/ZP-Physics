@@ -1,5 +1,15 @@
 # version 0.1.1
 
+• add matrix load operation
+
+• add matrix 2x2
+
+• remove vector make function
+
+• fix moment of inertia for circle2d shape 
+
+• cleanup the cmakelists
+
 • move early rejection before hashmap query.
 
 • change bvh nearly equal to equal
