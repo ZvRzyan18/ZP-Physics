@@ -6,8 +6,11 @@ NOTE : This engine is still currently unstable.
 ![My Image](sample.jpg)
 
 # Supported Features
-**Bodies 2D **
+**Shape 2D **
+
 • Box
+
+• Circle
 
 # version 0.1.1
  see [update_log.txt](https://github.com/ZvRzyan18/bitz-physics/blob/main/update_log.txt)
